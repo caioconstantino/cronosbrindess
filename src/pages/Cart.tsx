@@ -3,20 +3,47 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, Minus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Cart() {
   const [cart, setCart] = useState<any[]>([]);
+  const [variantsData, setVariantsData] = useState<Record<string, any>>({});
   const navigate = useNavigate();
 
   useEffect(() => {
     loadCart();
   }, []);
 
-  const loadCart = () => {
+  const loadCart = async () => {
     const savedCart = localStorage.getItem("cart");
     if (savedCart) {
-      setCart(JSON.parse(savedCart));
+      const parsedCart = JSON.parse(savedCart);
+      setCart(parsedCart);
+      
+      // Carregar informações das variantes
+      const variantIds = new Set<string>();
+      parsedCart.forEach((item: any) => {
+        if (item.selectedVariants) {
+          Object.keys(item.selectedVariants).forEach(id => variantIds.add(id));
+        }
+      });
+
+      if (variantIds.size > 0) {
+        const { data } = await supabase
+          .from("product_variants")
+          .select("id, name")
+          .in("id", Array.from(variantIds));
+        
+        if (data) {
+          const variantsMap: Record<string, any> = {};
+          data.forEach(variant => {
+            variantsMap[variant.id] = variant;
+          });
+          setVariantsData(variantsMap);
+        }
+      }
     }
   };
 
@@ -85,6 +112,20 @@ export default function Cart() {
 
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-base md:text-lg line-clamp-2">{item.name}</h3>
+                      
+                      {item.selectedVariants && Object.keys(item.selectedVariants).length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {Object.entries(item.selectedVariants).map(([variantId, value]) => {
+                            const variantName = variantsData[variantId]?.name || "Opção";
+                            return (
+                              <Badge key={variantId} variant="secondary" className="text-xs">
+                                {variantName}: {value as string}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      )}
+                      
                       {item.price && (
                         <p className="text-primary font-bold mt-1 text-sm md:text-base">
                           R$ {item.price.toFixed(2)}
