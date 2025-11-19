@@ -19,6 +19,7 @@ import EditarPedido from "./pages/admin/EditarPedido";
 import Clientes from "./pages/admin/Clientes";
 import SiteClients from "./pages/admin/SiteClients";
 import Usuarios from "./pages/admin/Usuarios";
+import Permissoes from "./pages/admin/Permissoes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="usuarios" element={<Usuarios />} />
             <Route path="configuracoes/banners" element={<Banners />} />
             <Route path="configuracoes/clientes" element={<SiteClients />} />
+            <Route path="configuracoes/permissoes" element={<Permissoes />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

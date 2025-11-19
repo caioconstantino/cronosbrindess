@@ -51,7 +51,7 @@ serve(async (req) => {
       );
     }
 
-    const { email, password } = await req.json();
+    const { email, password, role = 'customer' } = await req.json();
 
     if (!email || !password) {
       return new Response(
@@ -98,7 +98,7 @@ serve(async (req) => {
       .from('user_roles')
       .insert({
         user_id: newUser.user.id,
-        role: 'customer',
+        role: role,
       });
 
     if (roleError) {
