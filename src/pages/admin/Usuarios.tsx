@@ -35,7 +35,7 @@ import { UserPlus, Shield, ShieldOff } from "lucide-react";
 type UserRole = {
   id: string;
   user_id: string;
-  role: "admin" | "customer";
+  role: "admin" | "customer" | "vendedor";
 };
 
 type UserWithRoles = {
@@ -53,6 +53,7 @@ export default function Usuarios() {
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState<"admin" | "customer" | "vendedor">("customer");
   const [isCreating, setIsCreating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -175,6 +176,7 @@ export default function Usuarios() {
 
       setNewUserEmail("");
       setNewUserPassword("");
+      setNewUserRole("customer");
       setDialogOpen(false);
       loadUsers();
     } catch (error: any) {
@@ -190,7 +192,7 @@ export default function Usuarios() {
     }
   };
 
-  const toggleRole = async (userId: string, role: "admin" | "customer", hasRole: boolean) => {
+  const toggleRole = async (userId: string, role: "admin" | "customer" | "vendedor", hasRole: boolean) => {
     try {
       if (hasRole) {
         // Remove role
@@ -279,6 +281,19 @@ export default function Usuarios() {
                   onChange={(e) => setNewUserPassword(e.target.value)}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="role">Tipo de Usuário</Label>
+                <Select value={newUserRole} onValueChange={(value: any) => setNewUserRole(value)}>
+                  <SelectTrigger id="role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="customer">Cliente</SelectItem>
+                    <SelectItem value="vendedor">Vendedor</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 onClick={createUser}
                 disabled={isCreating}
@@ -315,6 +330,7 @@ export default function Usuarios() {
                 users.map((user) => {
                   const hasAdminRole = user.roles.some(r => r.role === "admin");
                   const hasCustomerRole = user.roles.some(r => r.role === "customer");
+                  const hasVendedorRole = user.roles.some(r => r.role === "vendedor");
 
                   return (
                     <TableRow key={user.id}>
@@ -327,10 +343,13 @@ export default function Usuarios() {
                               Admin
                             </Badge>
                           )}
-                          {hasCustomerRole && (
-                            <Badge variant="secondary">Cliente</Badge>
+                          {hasVendedorRole && (
+                            <Badge variant="secondary">Vendedor</Badge>
                           )}
-                          {!hasAdminRole && !hasCustomerRole && (
+                          {hasCustomerRole && (
+                            <Badge variant="outline">Cliente</Badge>
+                          )}
+                          {!hasAdminRole && !hasCustomerRole && !hasVendedorRole && (
                             <Badge variant="outline">Sem permissões</Badge>
                           )}
                         </div>
@@ -353,6 +372,13 @@ export default function Usuarios() {
                                 Tornar Admin
                               </>
                             )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={hasVendedorRole ? "outline" : "secondary"}
+                            onClick={() => toggleRole(user.id, "vendedor", hasVendedorRole)}
+                          >
+                            {hasVendedorRole ? "Remover Vendedor" : "Tornar Vendedor"}
                           </Button>
                           <Button
                             size="sm"
