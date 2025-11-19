@@ -68,14 +68,23 @@ export default function Permissoes() {
     try {
       const { data, error } = await supabase
         .from('role_permissions')
-        .select('*')
+        .select('id, resource_id, can_view, can_create, can_edit, can_delete')
         .eq('role', selectedRole);
 
       if (error) throw error;
 
       const permsMap: Record<string, RolePermission> = {};
+      
+      // Mapear permissões existentes
       data?.forEach(perm => {
-        permsMap[perm.resource_id] = perm;
+        permsMap[perm.resource_id] = {
+          id: perm.id,
+          resource_id: perm.resource_id,
+          can_view: perm.can_view,
+          can_create: perm.can_create,
+          can_edit: perm.can_edit,
+          can_delete: perm.can_delete,
+        };
       });
 
       // Inicializar recursos sem permissões
