@@ -43,10 +43,10 @@ export default function Permissoes() {
   }, []);
 
   useEffect(() => {
-    if (selectedRole) {
+    if (selectedRole && resources.length > 0) {
       fetchPermissions();
     }
-  }, [selectedRole]);
+  }, [selectedRole, resources]);
 
   const fetchResources = async () => {
     try {
@@ -110,13 +110,23 @@ export default function Permissoes() {
   };
 
   const updatePermission = (resourceId: string, field: keyof RolePermission, value: boolean) => {
-    setPermissions(prev => ({
-      ...prev,
-      [resourceId]: {
-        ...prev[resourceId],
-        [field]: value,
-      }
-    }));
+    setPermissions(prev => {
+      const current = prev[resourceId] ?? {
+        resource_id: resourceId,
+        can_view: false,
+        can_create: false,
+        can_edit: false,
+        can_delete: false,
+      };
+
+      return {
+        ...prev,
+        [resourceId]: {
+          ...current,
+          [field]: value,
+        },
+      };
+    });
   };
 
   const handleSave = async () => {
@@ -128,9 +138,8 @@ export default function Permissoes() {
         .delete()
         .eq('role', selectedRole);
 
-      // Inserir novas permissões (apenas as que têm pelo menos uma permissão marcada)
       const permsToInsert = Object.values(permissions)
-        .filter(perm => perm.can_view || perm.can_create || perm.can_edit || perm.can_delete)
+        .filter(perm => perm.resource_id && (perm.can_view || perm.can_create || perm.can_edit || perm.can_delete))
         .map(perm => ({
           role: selectedRole,
           resource_id: perm.resource_id,
