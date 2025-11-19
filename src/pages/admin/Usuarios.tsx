@@ -30,12 +30,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserPlus, Shield, ShieldOff } from "lucide-react";
+import { UserPlus, Shield, ShieldOff, Briefcase } from "lucide-react";
+import ClientAccessDialog from "./ClientAccessDialog";
 
 type UserRole = {
   id: string;
   user_id: string;
   role: "admin" | "customer" | "vendedor";
+  client_access_type?: "master" | "own";
 };
 
 type UserWithRoles = {
@@ -56,6 +58,8 @@ export default function Usuarios() {
   const [newUserRole, setNewUserRole] = useState<"admin" | "customer" | "vendedor">("customer");
   const [isCreating, setIsCreating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [clientAccessDialogOpen, setClientAccessDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; email: string; accessType: 'master' | 'own' } | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -76,7 +80,7 @@ export default function Usuarios() {
       // Get all user roles
       const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
-        .select("*");
+        .select("*, client_access_type");
 
       if (rolesError) throw rolesError;
 
@@ -316,13 +320,14 @@ export default function Usuarios() {
               <TableRow>
                 <TableHead>Email</TableHead>
                 <TableHead>Permissões</TableHead>
+                <TableHead>Acesso</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground">
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">
                     Nenhum usuário encontrado
                   </TableCell>
                 </TableRow>
@@ -331,6 +336,8 @@ export default function Usuarios() {
                   const hasAdminRole = user.roles.some(r => r.role === "admin");
                   const hasCustomerRole = user.roles.some(r => r.role === "customer");
                   const hasVendedorRole = user.roles.some(r => r.role === "vendedor");
+                  const vendedorRole = user.roles.find(r => r.role === "vendedor");
+                  const clientAccessType = vendedorRole?.client_access_type || 'own';
 
                   return (
                     <TableRow key={user.id}>
@@ -353,6 +360,25 @@ export default function Usuarios() {
                             <Badge variant="outline">Sem permissões</Badge>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {hasVendedorRole && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setSelectedUser({ 
+                                id: user.id, 
+                                email: user.email,
+                                accessType: clientAccessType as 'master' | 'own'
+                              });
+                              setClientAccessDialogOpen(true);
+                            }}
+                          >
+                            <Briefcase className="mr-2 h-4 w-4" />
+                            {clientAccessType === 'master' ? 'Master' : 'Própria'}
+                          </Button>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -397,6 +423,17 @@ export default function Usuarios() {
           </Table>
         </CardContent>
       </Card>
+
+      {selectedUser && (
+        <ClientAccessDialog
+          open={clientAccessDialogOpen}
+          onOpenChange={setClientAccessDialogOpen}
+          userId={selectedUser.id}
+          userEmail={selectedUser.email}
+          currentAccessType={selectedUser.accessType}
+          onUpdate={loadUsers}
+        />
+      )}
     </div>
   );
 }

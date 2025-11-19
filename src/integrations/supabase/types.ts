@@ -306,6 +306,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          assigned_salesperson_id: string | null
           cep: string | null
           cidade: string | null
           complemento: string | null
@@ -322,6 +323,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_salesperson_id?: string | null
           cep?: string | null
           cidade?: string | null
           complemento?: string | null
@@ -338,6 +340,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_salesperson_id?: string | null
           cep?: string | null
           cidade?: string | null
           complemento?: string | null
@@ -419,18 +422,21 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          client_access_type: string | null
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          client_access_type?: string | null
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          client_access_type?: string | null
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
