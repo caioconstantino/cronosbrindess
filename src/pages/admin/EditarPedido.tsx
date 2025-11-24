@@ -108,12 +108,25 @@ export default function EditarPedido() {
     // Load salesperson profile if order has user_id
     let salespersonData = null;
     if (orderData.user_id) {
-      const { data } = await supabase
-        .from("profiles")
-        .select("contato")
-        .eq("id", orderData.user_id)
+      // user_id is the auth user id, so we need to find the profile by matching it
+      // First, get the user_roles to confirm this is a salesperson
+      const { data: userRoleData } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("user_id", orderData.user_id)
+        .eq("role", "vendedor")
         .maybeSingle();
-      salespersonData = data;
+
+      if (userRoleData) {
+        // Now get the profile using the auth user_id (which should match profiles.id if it's in profiles)
+        // But we should actually look for profiles where the ID matches the auth user
+        const { data } = await supabase
+          .from("profiles")
+          .select("contato")
+          .eq("id", orderData.user_id)
+          .maybeSingle();
+        salespersonData = data;
+      }
     }
 
     setOrder({
