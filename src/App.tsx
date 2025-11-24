@@ -23,6 +23,9 @@ import Usuarios from "./pages/admin/Usuarios";
 import Permissoes from "./pages/admin/Permissoes";
 import EmailSettings from "./pages/admin/EmailSettings";
 import EmailTemplates from "./pages/admin/EmailTemplates";
+import VendedorLayout from "./pages/vendedor/VendedorLayout";
+import VendedorClientes from "./pages/vendedor/VendedorClientes";
+import VendedorPedidos from "./pages/vendedor/VendedorPedidos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +57,11 @@ const App = () => (
             <Route path="configuracoes/email" element={<EmailSettings />} />
             <Route path="configuracoes/email/templates" element={<EmailTemplates />} />
             <Route path="configuracoes/permissoes" element={<Permissoes />} />
+          </Route>
+          <Route path="/vendedor" element={<VendedorLayout />}>
+            <Route index element={<VendedorClientes />} />
+            <Route path="clientes" element={<VendedorClientes />} />
+            <Route path="pedidos" element={<VendedorPedidos />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

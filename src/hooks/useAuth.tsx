@@ -8,6 +8,7 @@ export const useAuth = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isVendedor, setIsVendedor] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,10 +20,11 @@ export const useAuth = () => {
         if (session?.user) {
           setLoading(true);
           setTimeout(() => {
-            checkAdminRole(session.user.id);
+            checkUserRoles(session.user.id);
           }, 0);
         } else {
           setIsAdmin(false);
+          setIsVendedor(false);
           setLoading(false);
         }
       }
@@ -33,7 +35,7 @@ export const useAuth = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkAdminRole(session.user.id);
+        checkUserRoles(session.user.id);
       } else {
         setLoading(false);
       }
@@ -42,23 +44,44 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkAdminRole = async (userId: string) => {
+  const checkUserRoles = async (userId: string) => {
     const { data } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
+      .eq("user_id", userId);
     
-    setIsAdmin(!!data);
+    const roles = data?.map(r => r.role) || [];
+    setIsAdmin(roles.includes("admin"));
+    setIsVendedor(roles.includes("vendedor"));
     setLoading(false);
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
+    // Após login bem-sucedido, redirecionar baseado na role
+    if (!error && data.user) {
+      setTimeout(async () => {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", data.user.id);
+        
+        const userRoles = roles?.map(r => r.role) || [];
+        
+        if (userRoles.includes("admin")) {
+          navigate("/admin");
+        } else if (userRoles.includes("vendedor")) {
+          navigate("/vendedor");
+        } else {
+          navigate("/");
+        }
+      }, 100);
+    }
+    
     return { error };
   };
 
@@ -84,6 +107,7 @@ export const useAuth = () => {
     session,
     loading,
     isAdmin,
+    isVendedor,
     signIn,
     signUp,
     signOut,
