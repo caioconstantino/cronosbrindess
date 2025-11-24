@@ -432,6 +432,8 @@ export default function EditarPedido() {
       const pdfBlob = pdf.output("blob");
       const fileName = `${order.order_number}.pdf`;
 
+      console.log("PDF Blob created, size:", pdfBlob.size, "type:", pdfBlob.type);
+
       // Delete existing file if any
       const { error: deleteError } = await supabase.storage
         .from("order-pdfs")
@@ -441,11 +443,12 @@ export default function EditarPedido() {
         console.error("Error deleting old PDF:", deleteError);
       }
 
-      // Upload new PDF
-      const { error: uploadError } = await supabase.storage
+      // Upload new PDF with explicit content type
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from("order-pdfs")
         .upload(fileName, pdfBlob, {
           contentType: "application/pdf",
+          cacheControl: "3600",
           upsert: true,
         });
 
@@ -455,6 +458,8 @@ export default function EditarPedido() {
         setGeneratingPdf(false);
         return null;
       }
+
+      console.log("PDF uploaded successfully:", uploadData);
 
       setPdfGenerated(true);
       toast.success("PDF gerado e salvo com sucesso!");
@@ -500,20 +505,29 @@ export default function EditarPedido() {
         throw new Error("PDF não encontrado no storage");
       }
 
-      console.log("PDF downloaded, size:", pdfData.size);
+      console.log("PDF downloaded, size:", pdfData.size, "type:", pdfData.type);
 
-      // Convert blob to base64
-      const base64Content = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          const base64 = result.split(",")[1];
-          console.log("Base64 length:", base64.length);
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(pdfData);
-      });
+      // Verify PDF is valid by checking magic number
+      const arrayBuffer = await pdfData.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const header = String.fromCharCode(...uint8Array.slice(0, 4));
+      
+      console.log("PDF header:", header);
+      
+      if (header !== "%PDF") {
+        throw new Error("Arquivo baixado não é um PDF válido");
+      }
+
+      // Convert to base64 directly from arrayBuffer
+      let binary = '';
+      const bytes = new Uint8Array(arrayBuffer);
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Content = btoa(binary);
+
+      console.log("Base64 length:", base64Content.length);
 
       // Send email with attachment
       const { error } = await supabase.functions.invoke("send-email", {
