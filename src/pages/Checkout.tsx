@@ -141,6 +141,42 @@ export default function Checkout() {
 
       if (itemsError) throw itemsError;
 
+      // Send email to admin
+      try {
+        const { data: emailSettings } = await supabase
+          .from("email_settings")
+          .select("admin_email")
+          .limit(1)
+          .maybeSingle();
+
+        if (emailSettings?.admin_email) {
+          const itemsList = cart
+            .map((item) => `<li>${item.name} - Qtd: ${item.quantity} - R$ ${((item.price || 0) * item.quantity).toFixed(2)}</li>`)
+            .join("");
+
+          await supabase.functions.invoke("send-email", {
+            body: {
+              to: emailSettings.admin_email,
+              subject: `Novo Orçamento Recebido - #${orderData.order_number}`,
+              html: `
+                <h2>Novo Pedido de Orçamento</h2>
+                <p><strong>Número do Orçamento:</strong> ${orderData.order_number}</p>
+                <p><strong>Cliente:</strong> ${formData.empresa || formData.contato}</p>
+                <p><strong>Email:</strong> ${formData.email}</p>
+                <p><strong>Telefone:</strong> ${formData.telefone}</p>
+                <h3>Itens do Pedido:</h3>
+                <ul>${itemsList}</ul>
+                <p><strong>Total:</strong> R$ ${total.toFixed(2)}</p>
+                ${formData.notes ? `<p><strong>Observações:</strong> ${formData.notes}</p>` : ''}
+              `,
+            },
+          });
+        }
+      } catch (emailError) {
+        console.error("Error sending admin email:", emailError);
+        // Don't block the checkout if email fails
+      }
+
       // Clear cart
       localStorage.removeItem("cart");
 

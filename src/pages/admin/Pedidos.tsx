@@ -72,6 +72,8 @@ export default function Pedidos() {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    const order = orders.find(o => o.id === orderId);
+    
     const { error } = await supabase
       .from("orders")
       .update({ status: newStatus })
@@ -81,6 +83,44 @@ export default function Pedidos() {
       toast.error("Erro ao atualizar status do pedido");
     } else {
       toast.success("Status atualizado com sucesso!");
+      
+      // Send email to customer
+      try {
+        const { data: orderData } = await supabase
+          .from("orders")
+          .select("customer_email, order_number")
+          .eq("id", orderId)
+          .single();
+
+        if (orderData?.customer_email) {
+          const statusLabels: Record<string, string> = {
+            pending: "Pendente",
+            processing: "Em Processamento",
+            completed: "Concluído",
+            cancelled: "Cancelado",
+          };
+
+          await supabase.functions.invoke("send-email", {
+            body: {
+              to: orderData.customer_email,
+              subject: `Atualização do Orçamento #${orderData.order_number}`,
+              html: `
+                <h2>Atualização do Seu Orçamento</h2>
+                <p>Olá${order?.profiles?.contato ? ` ${order.profiles.contato}` : ''},</p>
+                <p>Seu orçamento <strong>#${orderData.order_number}</strong> foi atualizado.</p>
+                <p><strong>Novo Status:</strong> ${statusLabels[newStatus]}</p>
+                <p>Em breve entraremos em contato com mais informações.</p>
+                <br>
+                <p>Atenciosamente,<br>Cronos Brindes Corporativos</p>
+              `,
+            },
+          });
+        }
+      } catch (emailError) {
+        console.error("Error sending customer email:", emailError);
+        // Don't block the status update if email fails
+      }
+      
       loadOrders();
     }
   };
