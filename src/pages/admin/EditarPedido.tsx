@@ -130,7 +130,22 @@ export default function EditarPedido() {
     if (itemsError) {
       toast.error("Erro ao carregar itens do pedido");
     } else if (itemsData) {
-      setItems(itemsData as any);
+    setItems(itemsData as any);
+    }
+
+    // Check if PDF already exists in bucket
+    if (orderData.order_number) {
+      const fileName = `${orderData.order_number}.pdf`;
+      const { data: fileList, error: listError } = await supabase.storage
+        .from("order-pdfs")
+        .list("", {
+          search: fileName,
+        });
+
+      if (!listError && fileList && fileList.length > 0) {
+        console.log("PDF already exists in bucket:", fileName);
+        setPdfGenerated(true);
+      }
     }
 
     setLoading(false);
