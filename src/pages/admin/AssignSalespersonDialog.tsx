@@ -42,7 +42,7 @@ export default function AssignSalespersonDialog({
       .from("user_roles")
       .select(`
         user_id,
-        profiles!inner (
+        profiles:user_id (
           id,
           email,
           empresa
@@ -51,6 +51,7 @@ export default function AssignSalespersonDialog({
       .eq("role", "vendedor");
 
     if (error) {
+      console.error("Error loading salespersons:", error);
       toast.error("Erro ao carregar vendedores");
       return;
     }
