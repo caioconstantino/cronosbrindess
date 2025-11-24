@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Mail } from "lucide-react";
 import jsPDF from "jspdf";
 import logoImage from "@/assets/logo-cronos.png";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 type OrderItem = {
   id: string;
@@ -53,6 +55,9 @@ export default function EditarPedido() {
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -99,6 +104,11 @@ export default function EditarPedido() {
       ...orderData,
       profiles: profileData,
     });
+
+    // Set email for dialog
+    if (profileData?.email) {
+      setEmailTo(profileData.email);
+    }
 
     // Load order items with products
     const { data: itemsData, error: itemsError } = await supabase
@@ -173,8 +183,8 @@ export default function EditarPedido() {
     navigate("/admin/pedidos");
   };
 
-  const generatePDF = async () => {
-    if (!order) return;
+  const generatePDF = async (download = true) => {
+    if (!order) return null;
 
     const pdf = new jsPDF();
     const pageWidth = pdf.internal.pageSize.getWidth();
@@ -204,7 +214,6 @@ export default function EditarPedido() {
     y += 8;
     pdf.setFontSize(10);
     pdf.setFont("helvetica", "normal");
-    // Telefone intencionalmente vazio
     y += 5;
     pdf.text("comercial@cronosbrindes.com.br", pageWidth / 2, y, { align: "center" });
     
@@ -262,10 +271,9 @@ export default function EditarPedido() {
         y = 20;
       }
 
-      const textX = margin + 24; // espaço para miniatura
+      const textX = margin + 24;
       const imgSize = 18;
 
-      // Tentar renderizar a miniatura do produto
       if (item.products.image_url) {
         try {
           const img = new Image();
@@ -273,7 +281,7 @@ export default function EditarPedido() {
           img.src = item.products.image_url;
           await new Promise((resolve) => {
             img.onload = resolve;
-            img.onerror = resolve; // ignora erros de imagem
+            img.onerror = resolve;
           });
           try {
             pdf.addImage(img, "JPEG", margin + 2, y - 5, imgSize, imgSize);
@@ -384,9 +392,103 @@ export default function EditarPedido() {
       y += termLines.length * 4 + 2;
     }
 
-    // Save PDF
-    pdf.save(`orcamento-${order.order_number}.pdf`);
-    toast.success("PDF gerado com sucesso!");
+    // Signature area
+    y += 10;
+    if (y > 250) {
+      pdf.addPage();
+      y = 30;
+    }
+
+    pdf.setFontSize(10);
+    pdf.setFont("helvetica", "bold");
+    
+    // Signature box for company
+    const signatureY = y;
+    pdf.line(margin, signatureY + 20, pageWidth / 2 - 10, signatureY + 20);
+    pdf.text("CRONOS BRINDES CORPORATIVOS", margin, signatureY + 25);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    pdf.text("Assinatura e Carimbo", margin, signatureY + 30);
+
+    // Signature box for client
+    pdf.setFontSize(10);
+    pdf.setFont("helvetica", "bold");
+    pdf.line(pageWidth / 2 + 10, signatureY + 20, pageWidth - margin, signatureY + 20);
+    pdf.text("CLIENTE", pageWidth / 2 + 10, signatureY + 25);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    pdf.text("Assinatura e Carimbo", pageWidth / 2 + 10, signatureY + 30);
+
+    if (download) {
+      pdf.save(`orcamento-${order.order_number}.pdf`);
+      toast.success("PDF gerado com sucesso!");
+    }
+
+    return pdf;
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailTo || !order) {
+      toast.error("Email do destinatário é obrigatório");
+      return;
+    }
+
+    setSendingEmail(true);
+
+    try {
+      // Generate PDF
+      const pdf = await generatePDF(false);
+      if (!pdf) {
+        toast.error("Erro ao gerar PDF");
+        return;
+      }
+
+      // Convert PDF to base64
+      const pdfBlob = pdf.output("blob");
+      const reader = new FileReader();
+      
+      reader.onloadend = async () => {
+        const base64data = reader.result as string;
+        const base64Content = base64data.split(',')[1];
+
+        // Send email with attachment
+        const { error } = await supabase.functions.invoke("send-email", {
+          body: {
+            to: emailTo,
+            subject: `Orçamento #${order.order_number} - Cronos Brindes`,
+            html: `
+              <h2>Orçamento #${order.order_number}</h2>
+              <p>Olá ${order.profiles?.contato || ""},</p>
+              <p>Segue em anexo o orçamento solicitado.</p>
+              <p>Qualquer dúvida, estamos à disposição.</p>
+              <br>
+              <p>Atenciosamente,<br>
+              <strong>Cronos Brindes Corporativos</strong><br>
+              comercial@cronosbrindes.com.br</p>
+            `,
+            attachments: [
+              {
+                filename: `orcamento-${order.order_number}.pdf`,
+                content: base64Content,
+                contentType: "application/pdf",
+              },
+            ],
+          },
+        });
+
+        if (error) throw error;
+
+        toast.success("Orçamento enviado com sucesso!");
+        setEmailDialogOpen(false);
+      };
+
+      reader.readAsDataURL(pdfBlob);
+    } catch (error: any) {
+      console.error("Error sending email:", error);
+      toast.error("Erro ao enviar orçamento: " + error.message);
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   if (loading) return <div>Carregando...</div>;
@@ -394,6 +496,41 @@ export default function EditarPedido() {
 
   return (
     <div className="space-y-6">
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enviar Orçamento por Email</DialogTitle>
+            <DialogDescription>
+              Digite o email do destinatário para enviar o orçamento em PDF
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email do destinatário</Label>
+              <Input
+                id="email"
+                type="email"
+                value={emailTo}
+                onChange={(e) => setEmailTo(e.target.value)}
+                placeholder="email@exemplo.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEmailDialogOpen(false)}
+              disabled={sendingEmail}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSendEmail} disabled={sendingEmail}>
+              {sendingEmail ? "Enviando..." : "Enviar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/admin/pedidos")}>
@@ -405,9 +542,13 @@ export default function EditarPedido() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button onClick={generatePDF} variant="outline" className="gap-2">
+          <Button onClick={() => generatePDF(true)} variant="outline" className="gap-2">
             <Download className="h-4 w-4" />
             Gerar PDF
+          </Button>
+          <Button onClick={() => setEmailDialogOpen(true)} variant="outline" className="gap-2">
+            <Mail className="h-4 w-4" />
+            Enviar por Email
           </Button>
           <Button onClick={saveOrder}>
             Salvar Alterações

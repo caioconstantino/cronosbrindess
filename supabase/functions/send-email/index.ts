@@ -10,6 +10,11 @@ interface EmailRequest {
   to: string;
   subject: string;
   html: string;
+  attachments?: Array<{
+    filename: string;
+    content: string; // base64
+    contentType: string;
+  }>;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -19,7 +24,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { to, subject, html }: EmailRequest = await req.json();
+    const { to, subject, html, attachments }: EmailRequest = await req.json();
 
     console.log('Sending email to:', to);
 
@@ -35,13 +40,24 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
 
-    await client.send({
+    const emailConfig: any = {
       from: Deno.env.get('SMTP_USER') || '',
       to: to,
       subject: subject,
       content: 'text/html',
       html: html,
-    });
+    };
+
+    // Add attachments if provided
+    if (attachments && attachments.length > 0) {
+      emailConfig.attachments = attachments.map(att => ({
+        filename: att.filename,
+        content: Uint8Array.from(atob(att.content), c => c.charCodeAt(0)),
+        contentType: att.contentType,
+      }));
+    }
+
+    await client.send(emailConfig);
 
     await client.close();
 
