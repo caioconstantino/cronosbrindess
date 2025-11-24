@@ -204,7 +204,7 @@ export const Header = ({ cartItemsCount = 0 }: HeaderProps) => {
             </Sheet>
 
             <Link to="/" className="flex-shrink-0 hover:opacity-80 transition-opacity">
-              <img src={logoCronos} alt="Cronos Brindes & Camisetas" className="h-8 md:h-12 w-auto object-contain" />
+              <img src={logoCronos} alt="Cronos Brindes & Camisetas" className="h-10 md:h-16 w-auto object-contain" />
             </Link>
 
             {/* Desktop Search */}
