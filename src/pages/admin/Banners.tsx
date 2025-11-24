@@ -178,7 +178,7 @@ export default function Banners() {
               </div>
 
               <ImageUpload
-                bucket="banner-images"
+                bucket="banners"
                 currentImageUrl={formData.image_url}
                 onImageUploaded={(url) => setFormData({ ...formData, image_url: url })}
                 label="Imagem do Banner *"
