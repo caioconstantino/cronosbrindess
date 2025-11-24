@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { Eye } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 
 type Order = {
   id: string;
@@ -149,10 +149,16 @@ export default function VendedorPedidos() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Pedidos</h1>
-        <p className="text-sm text-muted-foreground">
-          {accessType === 'master' ? 'Visualizando todos os pedidos' : 'Visualizando pedidos dos seus clientes'}
-        </p>
+        <div>
+          <h1 className="text-3xl font-bold">Pedidos</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {accessType === 'master' ? 'Visualizando todos os pedidos' : 'Visualizando pedidos dos seus clientes'}
+          </p>
+        </div>
+        <Button onClick={() => navigate("/vendedor/pedidos/novo")}>
+          <Plus className="h-4 w-4 mr-2" />
+          Criar Pedido
+        </Button>
       </div>
 
       {orders.length === 0 ? (
