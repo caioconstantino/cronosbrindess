@@ -191,15 +191,35 @@ export default function CriarPedido() {
         throw profileError;
       }
 
-      // Se vendedor criou o pedido, atribuir o cliente a ele
+      // Se vendedor criou o pedido e tem carteira própria, atribuir o cliente se ele não tiver vendedor
       if (isVendedor && user?.id) {
-        const { error: assignError } = await supabase
-          .from("profiles")
-          .update({ assigned_salesperson_id: user.id })
-          .eq("email", email);
+        // Verificar se o vendedor tem carteira própria
+        const { data: userRole } = await supabase
+          .from("user_roles")
+          .select("client_access_type")
+          .eq("user_id", user.id)
+          .eq("role", "vendedor")
+          .single();
 
-        if (assignError) {
-          console.error("Error assigning salesperson:", assignError);
+        if (userRole?.client_access_type === "own") {
+          // Verificar se o cliente já tem vendedor atribuído
+          const { data: existingProfile } = await supabase
+            .from("profiles")
+            .select("assigned_salesperson_id")
+            .eq("email", email)
+            .single();
+
+          // Se não tem vendedor atribuído, atribuir ao vendedor atual
+          if (existingProfile && !existingProfile.assigned_salesperson_id) {
+            const { error: assignError } = await supabase
+              .from("profiles")
+              .update({ assigned_salesperson_id: user.id })
+              .eq("email", email);
+
+            if (assignError) {
+              console.error("Error assigning salesperson:", assignError);
+            }
+          }
         }
       }
 
