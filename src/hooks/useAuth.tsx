@@ -13,15 +13,13 @@ export const useAuth = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           setLoading(true);
-          setTimeout(() => {
-            checkUserRoles(session.user.id);
-          }, 0);
+          await checkUserRoles(session.user.id);
         } else {
           setIsAdmin(false);
           setIsVendedor(false);
@@ -30,12 +28,12 @@ export const useAuth = () => {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkUserRoles(session.user.id);
+        await checkUserRoles(session.user.id);
       } else {
         setLoading(false);
       }
@@ -62,24 +60,24 @@ export const useAuth = () => {
       password,
     });
     
-    // Após login bem-sucedido, redirecionar baseado na role
     if (!error && data.user) {
-      setTimeout(async () => {
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", data.user.id);
-        
-        const userRoles = roles?.map(r => r.role) || [];
-        
-        if (userRoles.includes("admin")) {
-          navigate("/admin");
-        } else if (userRoles.includes("vendedor")) {
-          navigate("/vendedor");
-        } else {
-          navigate("/");
-        }
-      }, 100);
+      // Aguardar a verificação de roles antes de redirecionar
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id);
+      
+      const userRoles = roles?.map(r => r.role) || [];
+      setIsAdmin(userRoles.includes("admin"));
+      setIsVendedor(userRoles.includes("vendedor"));
+      
+      if (userRoles.includes("admin")) {
+        navigate("/admin");
+      } else if (userRoles.includes("vendedor")) {
+        navigate("/vendedor");
+      } else {
+        navigate("/");
+      }
     }
     
     return { error };
