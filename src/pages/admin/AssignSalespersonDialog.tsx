@@ -38,31 +38,37 @@ export default function AssignSalespersonDialog({
   }, [open, currentSalespersonId]);
 
   const loadSalespersons = async () => {
-    const { data, error } = await supabase
+    // First get all user_ids with vendedor role
+    const { data: vendedorRoles, error: rolesError } = await supabase
       .from("user_roles")
-      .select(`
-        user_id,
-        profiles:user_id (
-          id,
-          email,
-          empresa
-        )
-      `)
+      .select("user_id")
       .eq("role", "vendedor");
 
-    if (error) {
-      console.error("Error loading salespersons:", error);
+    if (rolesError) {
+      console.error("Error loading salesperson roles:", rolesError);
       toast.error("Erro ao carregar vendedores");
       return;
     }
 
-    const formattedSalespersons = data?.map((item: any) => ({
-      id: item.profiles.id,
-      email: item.profiles.email,
-      empresa: item.profiles.empresa,
-    })) || [];
+    if (!vendedorRoles || vendedorRoles.length === 0) {
+      setSalespersons([]);
+      return;
+    }
 
-    setSalespersons(formattedSalespersons);
+    // Then get the profiles for those user_ids
+    const vendedorIds = vendedorRoles.map(r => r.user_id);
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, email, empresa")
+      .in("id", vendedorIds);
+
+    if (profilesError) {
+      console.error("Error loading salesperson profiles:", profilesError);
+      toast.error("Erro ao carregar vendedores");
+      return;
+    }
+
+    setSalespersons(profiles || []);
   };
 
   const handleSave = async () => {
