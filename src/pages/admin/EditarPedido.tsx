@@ -48,6 +48,9 @@ type Order = {
     estado: string | null;
     cep: string | null;
   } | null;
+  salesperson?: {
+    contato: string | null;
+  } | null;
 };
 
 export default function EditarPedido() {
@@ -102,9 +105,21 @@ export default function EditarPedido() {
       profileData = data;
     }
 
+    // Load salesperson profile if order has user_id
+    let salespersonData = null;
+    if (orderData.user_id) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("contato")
+        .eq("id", orderData.user_id)
+        .maybeSingle();
+      salespersonData = data;
+    }
+
     setOrder({
       ...orderData,
       profiles: profileData,
+      salesperson: salespersonData,
     });
 
     // Set email for dialog
@@ -266,6 +281,14 @@ export default function EditarPedido() {
         pdf.text(`${order.profiles.cidade || ""} - ${order.profiles.estado || ""} - CEP: ${order.profiles.cep || ""}`, margin, y);
         y += 5;
       }
+    }
+
+    // Salesperson info
+    if (order.salesperson?.contato) {
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "bold");
+      pdf.text(`Vendedor: ${order.salesperson.contato}`, margin, y);
+      y += 5;
     }
 
     y += 5;
