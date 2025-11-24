@@ -485,13 +485,22 @@ export default function EditarPedido() {
     try {
       // Download PDF from storage
       const fileName = `${order.order_number}.pdf`;
+      console.log("Downloading PDF from bucket:", fileName);
+      
       const { data: pdfData, error: downloadError } = await supabase.storage
         .from("order-pdfs")
         .download(fileName);
 
-      if (downloadError || !pdfData) {
-        throw new Error("Erro ao buscar PDF do storage");
+      if (downloadError) {
+        console.error("Download error:", downloadError);
+        throw new Error(`Erro ao buscar PDF: ${downloadError.message}`);
       }
+
+      if (!pdfData) {
+        throw new Error("PDF não encontrado no storage");
+      }
+
+      console.log("PDF downloaded, size:", pdfData.size);
 
       // Convert blob to base64
       const base64Content = await new Promise<string>((resolve, reject) => {
@@ -499,6 +508,7 @@ export default function EditarPedido() {
         reader.onloadend = () => {
           const result = reader.result as string;
           const base64 = result.split(",")[1];
+          console.log("Base64 length:", base64.length);
           resolve(base64);
         };
         reader.onerror = reject;
