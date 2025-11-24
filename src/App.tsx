@@ -21,6 +21,7 @@ import SiteClients from "./pages/admin/SiteClients";
 import Usuarios from "./pages/admin/Usuarios";
 import Permissoes from "./pages/admin/Permissoes";
 import EmailSettings from "./pages/admin/EmailSettings";
+import EmailTemplates from "./pages/admin/EmailTemplates";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="configuracoes/banners" element={<Banners />} />
             <Route path="configuracoes/clientes" element={<SiteClients />} />
             <Route path="configuracoes/email" element={<EmailSettings />} />
+            <Route path="configuracoes/email/templates" element={<EmailTemplates />} />
             <Route path="configuracoes/permissoes" element={<Permissoes />} />
           </Route>
           <Route path="*" element={<NotFound />} />
