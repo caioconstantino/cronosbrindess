@@ -58,6 +58,8 @@ export default function EditarPedido() {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [emailTo, setEmailTo] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [pdfGenerated, setPdfGenerated] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -186,7 +188,10 @@ export default function EditarPedido() {
   const generatePDF = async (download = true) => {
     if (!order) return null;
 
-    const pdf = new jsPDF();
+    setGeneratingPdf(true);
+
+    try {
+      const pdf = new jsPDF();
     const pageWidth = pdf.internal.pageSize.getWidth();
     const margin = 15;
     let y = 20;
@@ -419,12 +424,49 @@ export default function EditarPedido() {
     pdf.setFontSize(8);
     pdf.text("Assinatura e Carimbo", pageWidth / 2 + 10, signatureY + 30);
 
-    if (download) {
-      pdf.save(`orcamento-${order.order_number}.pdf`);
-      toast.success("PDF gerado com sucesso!");
-    }
+      if (download) {
+        pdf.save(`orcamento-${order.order_number}.pdf`);
+      }
 
-    return pdf;
+      // Save PDF to storage bucket
+      const pdfBlob = pdf.output("blob");
+      const fileName = `${order.order_number}.pdf`;
+
+      // Delete existing file if any
+      const { error: deleteError } = await supabase.storage
+        .from("order-pdfs")
+        .remove([fileName]);
+
+      if (deleteError && deleteError.message !== "Object not found") {
+        console.error("Error deleting old PDF:", deleteError);
+      }
+
+      // Upload new PDF
+      const { error: uploadError } = await supabase.storage
+        .from("order-pdfs")
+        .upload(fileName, pdfBlob, {
+          contentType: "application/pdf",
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error("Error uploading PDF:", uploadError);
+        toast.error("Erro ao salvar PDF");
+        setGeneratingPdf(false);
+        return null;
+      }
+
+      setPdfGenerated(true);
+      toast.success("PDF gerado e salvo com sucesso!");
+
+      return pdf;
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Erro ao gerar PDF");
+      return null;
+    } finally {
+      setGeneratingPdf(false);
+    }
   };
 
   const handleSendEmail = async () => {
@@ -433,40 +475,35 @@ export default function EditarPedido() {
       return;
     }
 
-    if (!items || items.length === 0) {
-      toast.error("Não há itens no pedido para gerar o PDF");
+    if (!pdfGenerated) {
+      toast.error("Gere o PDF antes de enviar o email");
       return;
     }
 
     setSendingEmail(true);
 
     try {
-      // Generate PDF
-      const pdf = await generatePDF(false);
-      if (!pdf) {
-        toast.error("Erro ao gerar PDF");
-        setSendingEmail(false);
-        return;
+      // Download PDF from storage
+      const fileName = `${order.order_number}.pdf`;
+      const { data: pdfData, error: downloadError } = await supabase.storage
+        .from("order-pdfs")
+        .download(fileName);
+
+      if (downloadError || !pdfData) {
+        throw new Error("Erro ao buscar PDF do storage");
       }
 
-      // Convert PDF to Blob then to base64
-      const pdfBlob = pdf.output("blob");
-      
-      // Convert blob to base64 using FileReader
+      // Convert blob to base64
       const base64Content = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
           const result = reader.result as string;
-          // Remove the data URL prefix (data:application/pdf;base64,)
           const base64 = result.split(",")[1];
           resolve(base64);
         };
         reader.onerror = reject;
-        reader.readAsDataURL(pdfBlob);
+        reader.readAsDataURL(pdfData);
       });
-
-      console.log("PDF Base64 length:", base64Content.length);
-      console.log("PDF Blob size:", pdfBlob.size);
 
       // Send email with attachment
       const { error } = await supabase.functions.invoke("send-email", {
@@ -556,11 +593,21 @@ export default function EditarPedido() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => generatePDF(true)} variant="outline" className="gap-2">
+          <Button 
+            onClick={() => generatePDF(true)} 
+            variant="outline" 
+            className="gap-2"
+            disabled={generatingPdf}
+          >
             <Download className="h-4 w-4" />
-            Gerar PDF
+            {generatingPdf ? "Gerando..." : "Gerar PDF"}
           </Button>
-          <Button onClick={() => setEmailDialogOpen(true)} variant="outline" className="gap-2">
+          <Button 
+            onClick={() => setEmailDialogOpen(true)} 
+            variant="outline" 
+            className="gap-2"
+            disabled={!pdfGenerated || generatingPdf}
+          >
             <Mail className="h-4 w-4" />
             Enviar por Email
           </Button>
