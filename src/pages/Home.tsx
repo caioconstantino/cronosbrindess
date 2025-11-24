@@ -195,9 +195,6 @@ export default function Home() {
         </section>
       )}
 
-      {/* Feature Section */}
-      <FeatureSection />
-
       {/* Lançamentos */}
       <ProductSection
         title="Lançamentos"
@@ -240,6 +237,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Feature Section */}
+      <FeatureSection />
 
       {/* CTA Section */}
       <section className="py-12 md:py-16 px-4 bg-primary text-primary-foreground relative overflow-hidden">
