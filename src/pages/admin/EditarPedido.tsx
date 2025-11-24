@@ -449,11 +449,24 @@ export default function EditarPedido() {
         return;
       }
 
-      // Convert PDF to base64 string using dataUrl method
-      const pdfDataUrl = pdf.output("dataurlstring");
-      const base64Content = pdfDataUrl.split(",")[1];
+      // Convert PDF to Blob then to base64
+      const pdfBlob = pdf.output("blob");
+      
+      // Convert blob to base64 using FileReader
+      const base64Content = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          // Remove the data URL prefix (data:application/pdf;base64,)
+          const base64 = result.split(",")[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(pdfBlob);
+      });
 
       console.log("PDF Base64 length:", base64Content.length);
+      console.log("PDF Blob size:", pdfBlob.size);
 
       // Send email with attachment
       const { error } = await supabase.functions.invoke("send-email", {
