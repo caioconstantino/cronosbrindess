@@ -59,49 +59,41 @@ export default function VendedorPedidos() {
     if (!user) return;
 
     try {
-      const { data: ordersData, error } = await supabase
+      // Build query based on access type
+      let query = supabase
         .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*");
+
+      if (accessType === 'own') {
+        // For 'own' access, filter by user_id (orders created by this vendor)
+        query = query.eq("user_id", user.id);
+      } else {
+        // For 'master' access, show all orders (RLS will handle permissions)
+        // No additional filter needed
+      }
+
+      const { data: ordersData, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Get client emails based on access type
-      let allowedEmails: string[] = [];
-      
-      if (accessType === 'own') {
-        // Get only assigned clients
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("assigned_salesperson_id", user.id);
-        
-        allowedEmails = profiles?.map(p => p.email).filter(Boolean) as string[] || [];
-      }
-
-      // Filter orders and load profiles
+      // Load profiles for each order
       const ordersWithProfiles = await Promise.all(
-        (ordersData || [])
-          .filter(order => {
-            if (accessType === 'master') return true;
-            return order.customer_email && allowedEmails.includes(order.customer_email);
-          })
-          .map(async (order) => {
-            if (!order.customer_email) {
-              return { ...order, profiles: null };
-            }
+        (ordersData || []).map(async (order) => {
+          if (!order.customer_email) {
+            return { ...order, profiles: null };
+          }
 
-            const { data: profileData } = await supabase
-              .from("profiles")
-              .select("empresa, contato")
-              .eq("email", order.customer_email)
-              .maybeSingle();
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("empresa, contato")
+            .eq("email", order.customer_email)
+            .maybeSingle();
 
-            return {
-              ...order,
-              profiles: profileData,
-            };
-          })
+          return {
+            ...order,
+            profiles: profileData,
+          };
+        })
       );
 
       setOrders(ordersWithProfiles);
