@@ -1,7 +1,7 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Package, Layers, ShoppingCart, Users, Settings, Image, Building2, UserCog, Shield } from "lucide-react";
+import { LayoutDashboard, Package, Layers, ShoppingCart, Users, Settings, Image, Building2, UserCog, Shield, Mail } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -20,6 +20,7 @@ const navigation = [
 const settingsNavigation = [
   { name: "Banners", href: "/admin/configuracoes/banners", icon: Image, resource: "banners" },
   { name: "Clientes", href: "/admin/configuracoes/clientes", icon: Building2, resource: "site_clientes" },
+  { name: "Email", href: "/admin/configuracoes/email", icon: Mail, resource: "usuarios" },
   { name: "Permissões", href: "/admin/configuracoes/permissoes", icon: Shield, resource: "usuarios" },
 ];
 

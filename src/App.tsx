@@ -48,8 +48,8 @@ const App = () => (
             <Route path="usuarios" element={<Usuarios />} />
             <Route path="configuracoes/banners" element={<Banners />} />
             <Route path="configuracoes/clientes" element={<SiteClients />} />
+            <Route path="configuracoes/email" element={<EmailSettings />} />
             <Route path="configuracoes/permissoes" element={<Permissoes />} />
-            <Route path="email-settings" element={<EmailSettings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
