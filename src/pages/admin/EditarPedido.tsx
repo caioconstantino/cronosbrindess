@@ -30,6 +30,9 @@ type Order = {
   status: string | null;
   notes: string | null;
   created_at: string;
+  payment_terms: string | null;
+  delivery_terms: string | null;
+  validity_terms: string | null;
   profiles: {
     empresa: string | null;
     contato: string | null;
@@ -133,14 +136,19 @@ export default function EditarPedido() {
   };
 
   const saveOrder = async () => {
-    if (!id) return;
+    if (!id || !order) return;
 
     const total = calculateTotal();
 
-    // Update order total
+    // Update order total and terms
     const { error: orderError } = await supabase
       .from("orders")
-      .update({ total })
+      .update({ 
+        total,
+        payment_terms: order.payment_terms,
+        delivery_terms: order.delivery_terms,
+        validity_terms: order.validity_terms
+      })
       .eq("id", id);
 
     if (orderError) {
@@ -303,6 +311,79 @@ export default function EditarPedido() {
     pdf.text("TOTAL GERAL:", pageWidth - margin - 60, y, { align: "right" });
     pdf.text(`R$ ${calculateTotal().toFixed(2)}`, pageWidth - margin, y, { align: "right" });
 
+    // Additional terms
+    y += 15;
+    
+    if (y > 240) {
+      pdf.addPage();
+      y = 20;
+    }
+
+    pdf.setFontSize(10);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("PAGAMENTO:", margin, y);
+    pdf.setFont("helvetica", "normal");
+    const paymentText = pdf.splitTextToSize(order.payment_terms || "21 DDL, CONTADOS A PARTIR DA EMISSÃO DA NF DE VENDA.", pageWidth - 2 * margin);
+    pdf.text(paymentText, margin, y + 5);
+    y += 5 + (paymentText.length * 5);
+
+    pdf.setFont("helvetica", "bold");
+    pdf.text("ENTREGA:", margin, y);
+    pdf.setFont("helvetica", "normal");
+    const deliveryText = pdf.splitTextToSize(order.delivery_terms || "A COMBINAR", pageWidth - 2 * margin);
+    pdf.text(deliveryText, margin, y + 5);
+    y += 5 + (deliveryText.length * 5);
+
+    pdf.setFont("helvetica", "bold");
+    pdf.text("VALIDADE:", margin, y);
+    pdf.setFont("helvetica", "normal");
+    const validityText = pdf.splitTextToSize(order.validity_terms || "10 DIAS - SUJEITO A CONFIRMAÇÃO DE ESTOQUE NO ATO DA FORMALIZAÇÃO DA COMPRA.", pageWidth - 2 * margin);
+    pdf.text(validityText, margin, y + 5);
+    y += 5 + (validityText.length * 5) + 10;
+
+    // Legal terms
+    if (y > 200) {
+      pdf.addPage();
+      y = 20;
+    }
+
+    pdf.setFontSize(8);
+    pdf.setFont("helvetica", "normal");
+    
+    const terms = [
+      "* FOTOLITO já incluso.",
+      "* Todos os Impostos inclusos, exceto Substituição Tributária de ICMS Estaduais são de responsabilidade da empresa compradora.",
+      "* ICMS ST: Para vendas de mercadorias com a opção \"uso e consumo\" faturadas e/ou destinadas para outras unidades federativas (entenda-se todos os estados do Brasil, com exceção de São Paulo) onde exista protocolo ou convênio com o Estado de São Paulo, ocorrerá a cobrança de ICMS ST. No orçamento acima NÃO está incluso tal imposto. Cabe ao cliente/comprador consultar sua alíquota, pois havendo a determinação do pagamento por parte da legislação do Estado de destino, o mesmo será recolhido antecipadamente e lançado na Nota Fiscal e boleto e/ou depósito, sem que haja a necessidade do aceite por parte da empresa/cliente comprador.",
+      "* O imposto da Substituição Tributária (ST) NÃO está incluso no preço final do orçamento, por se tratar de uma particularidade entre os Estados.",
+      "* O prazo de entrega previsto ( contados a partir da aprovação do layout virtual ) poderá sofrer modificações ou atrasos por motivos de força maior ou caso fortuito.",
+      "* Para desenvolvimento do layout virtual é necessário o envio da logomarca vetorizada.",
+      "* A vetorização da logomarca quando feita por nós, terão seus custos cobrados em separado conforme previamente acordado.",
+      "* A produção do pedido somente terá inicio com a aprovação da amostra virtual, momento em que será considerado aprovado o presente orçamento/pedido gerando os efeitos legais.",
+      "* A aprovação da amostra virtual e amostra física (produzida quando solicitado ) se darão através de e-mail e ou qualquer outro meio legal de comunicação, desde que identificando quem aprovou a amostra.",
+      "* A aprovação das amostras virtual e física deverá conter os dados pessoais de quem aprovou, bem como a identificação da empresa que representa.",
+      "* As condições de pagamento são as previstas acima, sendo que o prazo para pagamento começara a valer a partir da data de faturamento do produto (aceitamos Cartões de Crédito).",
+      "* Após a aprovação da amostra virtual e física ( quando solicitada ) não serão permitidas retratações/ retificações em relação aos campos acima, salvo se houver anuência expressa de ambas as partes.",
+      "* A gravação a laser é um processo de corrosão sobre o material, podendo variar sua tonalidade de acordo com a matéria prima do produto.",
+      "* A responsabilidade pela contratação do serviço de transporte para o envio de mercadorias para fora do município de São Paulo é da empresa solicitante.",
+      "* No entanto, podemos indicar uma transportadora, sem nos responsabilizarmos por eventuais danos ou atrasos ocorridos durante o transporte do produto.",
+      "* Estoque sujeito a alterações até o fechamento do pedido.",
+      "* O cancelamento do orçamento/ pedido, após a aprovação da amostra virtual, provocará a aplicação da cláusula penal estipulada em 20% ( vinte por cento ) do valor do pedido, além de responsabilidade em indenização por eventuais perdas e danos, com a indenização pelos custos ocorridos com o desenvolvimento de modelos e compra de matéria prima, bem como de mão de obra utilizada.",
+      "* Fica eleito o Fórum da cidade de São Paulo para dirimir todas e quaisquer dúvidas ou litígios provenientes deste pedido.",
+      "",
+      "Favor retornar este documento com os dados cadastrais completos ( Razão Social, Nome Fantasia, Endereço Completo com CEP, CNPJ, Inscrição Estadual e confirmação de endereços de entrega e cobrança )"
+    ];
+
+    for (const term of terms) {
+      if (y > 280) {
+        pdf.addPage();
+        y = 20;
+      }
+      
+      const termLines = pdf.splitTextToSize(term, pageWidth - 2 * margin);
+      pdf.text(termLines, margin, y);
+      y += termLines.length * 4 + 2;
+    }
+
     // Save PDF
     pdf.save(`orcamento-${order.order_number}.pdf`);
     toast.success("PDF gerado com sucesso!");
@@ -358,6 +439,38 @@ export default function EditarPedido() {
           <div>
             <p className="text-sm text-muted-foreground">Data do Pedido</p>
             <p className="font-medium">{format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Condições do Orçamento</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm font-medium block mb-2">Pagamento</label>
+            <Input
+              value={order.payment_terms || ""}
+              onChange={(e) => setOrder({ ...order, payment_terms: e.target.value })}
+              placeholder="21 DDL, CONTADOS A PARTIR DA EMISSÃO DA NF DE VENDA."
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-2">Entrega</label>
+            <Input
+              value={order.delivery_terms || ""}
+              onChange={(e) => setOrder({ ...order, delivery_terms: e.target.value })}
+              placeholder="A COMBINAR"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-2">Validade</label>
+            <Input
+              value={order.validity_terms || ""}
+              onChange={(e) => setOrder({ ...order, validity_terms: e.target.value })}
+              placeholder="10 DIAS - SUJEITO A CONFIRMAÇÃO DE ESTOQUE NO ATO DA FORMALIZAÇÃO DA COMPRA."
+            />
           </div>
         </CardContent>
       </Card>
