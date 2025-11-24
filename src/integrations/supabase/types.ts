@@ -118,6 +118,27 @@ export type Database = {
         }
         Relationships: []
       }
+      email_settings: {
+        Row: {
+          admin_email: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_email: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_email?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
