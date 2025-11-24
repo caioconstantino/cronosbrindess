@@ -433,6 +433,11 @@ export default function EditarPedido() {
       return;
     }
 
+    if (!items || items.length === 0) {
+      toast.error("Não há itens no pedido para gerar o PDF");
+      return;
+    }
+
     setSendingEmail(true);
 
     try {
@@ -444,11 +449,11 @@ export default function EditarPedido() {
         return;
       }
 
-      // Convert PDF to base64 using arraybuffer
-      const pdfOutput = pdf.output("arraybuffer");
-      const base64Content = btoa(
-        new Uint8Array(pdfOutput).reduce((data, byte) => data + String.fromCharCode(byte), '')
-      );
+      // Convert PDF to base64 string using dataUrl method
+      const pdfDataUrl = pdf.output("dataurlstring");
+      const base64Content = pdfDataUrl.split(",")[1];
+
+      console.log("PDF Base64 length:", base64Content.length);
 
       // Send email with attachment
       const { error } = await supabase.functions.invoke("send-email", {
