@@ -126,13 +126,13 @@ export const Header = ({ cartItemsCount = 0 }: HeaderProps) => {
         <div className="container mx-auto px-4 py-2.5">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-6">
-              <a href="tel:+551126133882" className="flex items-center gap-2 hover:text-accent transition-colors">
+              <a href="tel:+5511937260395" className="flex items-center gap-2 hover:text-accent transition-colors">
                 <Phone className="h-4 w-4" />
-                <span className="font-medium">+55 11 2613-3882</span>
+                <span className="font-medium">11 93726-0395</span>
               </a>
-              <a href="mailto:contato@loja.com.br" className="flex items-center gap-2 hover:text-accent transition-colors">
+              <a href="mailto:comercial@cronosbrindes.com.br" className="flex items-center gap-2 hover:text-accent transition-colors">
                 <Mail className="h-4 w-4" />
-                <span className="font-medium">contato@loja.com.br</span>
+                <span className="font-medium">comercial@cronosbrindes.com.br</span>
               </a>
             </div>
           </div>
@@ -157,13 +157,13 @@ export const Header = ({ cartItemsCount = 0 }: HeaderProps) => {
                 <div className="flex flex-col gap-4 mt-6">
                   {/* Contact Info */}
                   <div className="space-y-3 pb-4 border-b">
-                    <a href="tel:+551126133882" className="flex items-center gap-2 text-sm">
+                    <a href="tel:+5511937260395" className="flex items-center gap-2 text-sm">
                       <Phone className="h-4 w-4 text-primary" />
-                      <span>+55 11 2613-3882</span>
+                      <span>11 93726-0395</span>
                     </a>
-                    <a href="mailto:contato@loja.com.br" className="flex items-center gap-2 text-sm">
+                    <a href="mailto:comercial@cronosbrindes.com.br" className="flex items-center gap-2 text-sm">
                       <Mail className="h-4 w-4 text-primary" />
-                      <span>contato@loja.com.br</span>
+                      <span>comercial@cronosbrindes.com.br</span>
                     </a>
                   </div>
                   
