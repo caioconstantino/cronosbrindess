@@ -199,7 +199,7 @@ export default function VendedorPedidos() {
               </CardHeader>
               <CardContent>
                 <Button
-                  onClick={() => navigate(`/admin/pedidos/${order.id}/editar`)}
+                  onClick={() => navigate(`/vendedor/pedidos/${order.id}/editar`)}
                   variant="outline"
                   size="sm"
                 >

@@ -223,7 +223,13 @@ export default function CriarPedido() {
       if (itemsError) throw itemsError;
 
       toast.success("Pedido criado com sucesso!");
-      navigate(`/admin/pedidos/${order.id}/editar`);
+      
+      // Redirecionar baseado no tipo de usuário
+      if (isAdmin) {
+        navigate(`/admin/pedidos/${order.id}/editar`);
+      } else {
+        navigate(`/vendedor/pedidos`);
+      }
     } catch (error: any) {
       console.error("Error creating order:", error);
       toast.error(error.message || "Erro ao criar pedido");
@@ -240,7 +246,7 @@ export default function CriarPedido() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/admin/pedidos")}
+          onClick={() => navigate(isAdmin ? "/admin/pedidos" : "/vendedor/pedidos")}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>

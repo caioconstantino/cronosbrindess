@@ -60,20 +60,20 @@ export default function EditarPedido() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [pdfGenerated, setPdfGenerated] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isVendedor, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (authLoading) return;
     
-    if (!isAdmin) {
-      navigate("/");
+    if (!isAdmin && !isVendedor) {
+      navigate("/login");
       return;
     }
     if (id) {
       loadOrder();
     }
-  }, [id, isAdmin, authLoading]);
+  }, [id, isAdmin, isVendedor, authLoading]);
 
   const loadOrder = async () => {
     if (!id) return;
@@ -615,7 +615,7 @@ export default function EditarPedido() {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/admin/pedidos")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(isAdmin ? "/admin/pedidos" : "/vendedor/pedidos")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
