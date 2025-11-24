@@ -50,6 +50,7 @@ type Order = {
   } | null;
   salesperson?: {
     contato: string | null;
+    email: string | null;
   } | null;
 };
 
@@ -118,11 +119,10 @@ export default function EditarPedido() {
         .maybeSingle();
 
       if (userRoleData) {
-        // Now get the profile using the auth user_id (which should match profiles.id if it's in profiles)
-        // But we should actually look for profiles where the ID matches the auth user
+        // Get the profile with both contato and email
         const { data } = await supabase
           .from("profiles")
-          .select("contato")
+          .select("contato, email")
           .eq("id", orderData.user_id)
           .maybeSingle();
         salespersonData = data;
@@ -299,11 +299,12 @@ export default function EditarPedido() {
     }
 
     // Salesperson info - below client data
-    if (order.salesperson?.contato) {
+    if (order.salesperson) {
+      const vendedorNome = order.salesperson.contato || order.salesperson.email || 'N/A';
       y += 2;
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "bold");
-      pdf.text(`Vendedor: ${order.salesperson.contato}`, margin, y);
+      pdf.text(`Vendedor: ${vendedorNome}`, margin, y);
       y += 5;
     }
 
