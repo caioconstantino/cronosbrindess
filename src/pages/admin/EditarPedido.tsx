@@ -262,6 +262,8 @@ export default function EditarPedido() {
     y += 8;
     pdf.setFontSize(10);
     pdf.setFont("helvetica", "normal");
+    pdf.text("50.710.018/0001-55", pageWidth / 2, y, { align: "center" });
+    
     y += 5;
     pdf.text("comercial@cronosbrindes.com.br", pageWidth / 2, y, { align: "center" });
     
@@ -296,8 +298,9 @@ export default function EditarPedido() {
       }
     }
 
-    // Salesperson info
+    // Salesperson info - below client data
     if (order.salesperson?.contato) {
+      y += 2;
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "bold");
       pdf.text(`Vendedor: ${order.salesperson.contato}`, margin, y);
