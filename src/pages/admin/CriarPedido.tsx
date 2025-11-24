@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, UserPlus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 type Product = {
   id: string;
@@ -61,6 +62,20 @@ export default function CriarPedido() {
   // UI
   const [saving, setSaving] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  
+  // Dialog client form
+  const [dialogEmpresa, setDialogEmpresa] = useState("");
+  const [dialogContato, setDialogContato] = useState("");
+  const [dialogEmail, setDialogEmail] = useState("");
+  const [dialogTelefone, setDialogTelefone] = useState("");
+  const [dialogCpfCnpj, setDialogCpfCnpj] = useState("");
+  const [dialogCep, setDialogCep] = useState("");
+  const [dialogEndereco, setDialogEndereco] = useState("");
+  const [dialogNumero, setDialogNumero] = useState("");
+  const [dialogComplemento, setDialogComplemento] = useState("");
+  const [dialogCidade, setDialogCidade] = useState("");
+  const [dialogEstado, setDialogEstado] = useState("");
 
   useEffect(() => {
     if (authLoading) return;
@@ -153,6 +168,76 @@ export default function CriarPedido() {
 
   const calculateTotal = () => {
     return orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  };
+
+  const handleSaveNewClient = async () => {
+    if (!dialogEmail) {
+      toast.error("Email é obrigatório");
+      return;
+    }
+
+    if (!dialogEmpresa || !dialogContato) {
+      toast.error("Empresa e Contato são obrigatórios");
+      return;
+    }
+
+    try {
+      const { data: profileId, error } = await supabase.rpc("upsert_customer_profile", {
+        p_email: dialogEmail,
+        p_empresa: dialogEmpresa,
+        p_contato: dialogContato,
+        p_telefone: dialogTelefone || null,
+        p_cpf_cnpj: dialogCpfCnpj || null,
+        p_cep: dialogCep || null,
+        p_cidade: dialogCidade || null,
+        p_estado: dialogEstado || null,
+        p_endereco: dialogEndereco || null,
+        p_numero: dialogNumero || null,
+        p_complemento: dialogComplemento || null,
+      });
+
+      if (error) throw error;
+
+      // Se for vendedor, atribuir o cliente automaticamente
+      if (isVendedor && user?.id && profileId) {
+        await supabase
+          .from("profiles")
+          .update({ assigned_salesperson_id: user.id })
+          .eq("id", profileId);
+      }
+
+      // Preencher os campos do pedido com os dados do cliente
+      setEmail(dialogEmail);
+      setEmpresa(dialogEmpresa);
+      setContato(dialogContato);
+      setTelefone(dialogTelefone);
+      setCpfCnpj(dialogCpfCnpj);
+      setCep(dialogCep);
+      setEndereco(dialogEndereco);
+      setNumero(dialogNumero);
+      setComplemento(dialogComplemento);
+      setCidade(dialogCidade);
+      setEstado(dialogEstado);
+
+      // Limpar o dialog
+      setDialogEmail("");
+      setDialogEmpresa("");
+      setDialogContato("");
+      setDialogTelefone("");
+      setDialogCpfCnpj("");
+      setDialogCep("");
+      setDialogEndereco("");
+      setDialogNumero("");
+      setDialogComplemento("");
+      setDialogCidade("");
+      setDialogEstado("");
+      
+      setClientDialogOpen(false);
+      toast.success("Cliente cadastrado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao cadastrar cliente:", error);
+      toast.error("Erro ao cadastrar cliente");
+    }
   };
 
   const handleSubmit = async () => {
@@ -270,7 +355,150 @@ export default function CriarPedido() {
         {/* Dados do Cliente */}
         <Card>
           <CardHeader>
-            <CardTitle>Dados do Cliente</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Dados do Cliente</CardTitle>
+              <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Cadastrar Cliente
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
+                    <DialogDescription>
+                      Preencha os dados do novo cliente. Os dados serão automaticamente preenchidos no pedido.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="dialog-empresa">Empresa *</Label>
+                        <Input
+                          id="dialog-empresa"
+                          value={dialogEmpresa}
+                          onChange={(e) => setDialogEmpresa(e.target.value)}
+                          placeholder="Nome da empresa"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="dialog-contato">Contato *</Label>
+                        <Input
+                          id="dialog-contato"
+                          value={dialogContato}
+                          onChange={(e) => setDialogContato(e.target.value)}
+                          placeholder="Nome do contato"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="dialog-email">Email *</Label>
+                        <Input
+                          id="dialog-email"
+                          type="email"
+                          value={dialogEmail}
+                          onChange={(e) => setDialogEmail(e.target.value)}
+                          placeholder="email@exemplo.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="dialog-telefone">Telefone</Label>
+                        <Input
+                          id="dialog-telefone"
+                          value={dialogTelefone}
+                          onChange={(e) => setDialogTelefone(e.target.value)}
+                          placeholder="(11) 99999-9999"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="dialog-cpf-cnpj">CPF/CNPJ</Label>
+                        <Input
+                          id="dialog-cpf-cnpj"
+                          value={dialogCpfCnpj}
+                          onChange={(e) => setDialogCpfCnpj(e.target.value)}
+                          placeholder="000.000.000-00"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="dialog-cep">CEP</Label>
+                        <Input
+                          id="dialog-cep"
+                          value={dialogCep}
+                          onChange={(e) => setDialogCep(e.target.value)}
+                          placeholder="00000-000"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="md:col-span-2">
+                        <Label htmlFor="dialog-endereco">Endereço</Label>
+                        <Input
+                          id="dialog-endereco"
+                          value={dialogEndereco}
+                          onChange={(e) => setDialogEndereco(e.target.value)}
+                          placeholder="Rua, Avenida..."
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="dialog-numero">Número</Label>
+                        <Input
+                          id="dialog-numero"
+                          value={dialogNumero}
+                          onChange={(e) => setDialogNumero(e.target.value)}
+                          placeholder="123"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="dialog-complemento">Complemento</Label>
+                        <Input
+                          id="dialog-complemento"
+                          value={dialogComplemento}
+                          onChange={(e) => setDialogComplemento(e.target.value)}
+                          placeholder="Apto, Sala..."
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="dialog-cidade">Cidade</Label>
+                        <Input
+                          id="dialog-cidade"
+                          value={dialogCidade}
+                          onChange={(e) => setDialogCidade(e.target.value)}
+                          placeholder="São Paulo"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="dialog-estado">Estado</Label>
+                        <Input
+                          id="dialog-estado"
+                          value={dialogEstado}
+                          onChange={(e) => setDialogEstado(e.target.value)}
+                          placeholder="SP"
+                          maxLength={2}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setClientDialogOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleSaveNewClient}>
+                      Salvar Cliente
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid md:grid-cols-2 gap-4">
