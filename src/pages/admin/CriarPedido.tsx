@@ -34,7 +34,7 @@ type OrderItem = {
 
 export default function CriarPedido() {
   const navigate = useNavigate();
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { isAdmin, isVendedor, loading: authLoading } = useAuth();
   
   // Cliente
   const [empresa, setEmpresa] = useState("");
@@ -65,13 +65,13 @@ export default function CriarPedido() {
   useEffect(() => {
     if (authLoading) return;
     
-    if (!isAdmin) {
-      navigate("/");
+    if (!isAdmin && !isVendedor) {
+      navigate("/login");
       return;
     }
     
     loadProducts();
-  }, [authLoading, isAdmin, navigate]);
+  }, [authLoading, isAdmin, isVendedor, navigate]);
 
   const loadProducts = async () => {
     const { data, error } = await supabase
