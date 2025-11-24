@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { Plus } from "lucide-react";
 
 type Order = {
   id: string;
@@ -151,7 +152,13 @@ export default function Pedidos() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">Pedidos</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Pedidos</h1>
+        <Button onClick={() => navigate("/admin/pedidos/novo")}>
+          <Plus className="mr-2 h-4 w-4" />
+          Criar Pedido
+        </Button>
+      </div>
 
       <div className="grid gap-4">
         {orders.map((order) => (
