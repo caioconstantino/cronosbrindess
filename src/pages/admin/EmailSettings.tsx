@@ -10,18 +10,23 @@ import { toast } from "sonner";
 import { ArrowLeft, Mail } from "lucide-react";
 
 export default function EmailSettings() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
   const [settingsId, setSettingsId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user && !isAdmin) {
+    if (!authLoading && user && !isAdmin) {
       navigate("/admin");
     }
-    loadSettings();
-  }, [user, isAdmin, navigate]);
+  }, [user, isAdmin, authLoading, navigate]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadSettings();
+    }
+  }, [isAdmin]);
 
   const loadSettings = async () => {
     try {
