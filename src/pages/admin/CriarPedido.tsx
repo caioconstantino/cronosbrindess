@@ -355,11 +355,11 @@ export default function CriarPedido() {
         {/* Dados do Cliente */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <CardTitle>Dados do Cliente</CardTitle>
               <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="default" size="default" className="w-full sm:w-auto">
                     <UserPlus className="h-4 w-4 mr-2" />
                     Cadastrar Cliente
                   </Button>
