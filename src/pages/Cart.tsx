@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Trash2, Plus, Minus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -55,6 +56,19 @@ export default function Cart() {
           : item
       )
       .filter((item) => item.quantity > 0);
+
+    setCart(newCart);
+    localStorage.setItem("cart", JSON.stringify(newCart));
+  };
+
+  const setQuantity = (productId: string, value: string) => {
+    const numValue = parseInt(value) || 0;
+    const newCart = cart
+      .map((item) =>
+        item.id === productId
+          ? { ...item, quantity: Math.max(1, numValue) }
+          : item
+      );
 
     setCart(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
@@ -142,9 +156,13 @@ export default function Cart() {
                           >
                             <Minus className="h-3 w-3 md:h-4 md:w-4" />
                           </Button>
-                          <span className="w-8 md:w-12 text-center font-medium text-sm md:text-base">
-                            {item.quantity}
-                          </span>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => setQuantity(item.id, e.target.value)}
+                            className="w-16 md:w-20 text-center h-8 md:h-10"
+                          />
                           <Button
                             size="icon"
                             variant="outline"
