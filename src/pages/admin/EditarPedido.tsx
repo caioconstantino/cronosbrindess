@@ -488,69 +488,61 @@ export default function EditarPedido() {
     setSendingEmail(true);
 
     try {
-      // Download PDF from storage
       const fileName = `${order.order_number}.pdf`;
-      console.log("Downloading PDF from bucket:", fileName);
       
-      const { data: pdfData, error: downloadError } = await supabase.storage
+      // Create a signed URL for the PDF (valid for 7 days)
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from("order-pdfs")
-        .download(fileName);
+        .createSignedUrl(fileName, 604800); // 7 days in seconds
 
-      if (downloadError) {
-        console.error("Download error:", downloadError);
-        throw new Error(`Erro ao buscar PDF: ${downloadError.message}`);
+      if (signedUrlError || !signedUrlData) {
+        console.error("Error creating signed URL:", signedUrlError);
+        throw new Error("Erro ao criar link do PDF");
       }
 
-      if (!pdfData) {
-        throw new Error("PDF não encontrado no storage");
-      }
+      console.log("Signed URL created:", signedUrlData.signedUrl);
 
-      console.log("PDF downloaded, size:", pdfData.size, "type:", pdfData.type);
-
-      // Verify PDF is valid by checking magic number
-      const arrayBuffer = await pdfData.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const header = String.fromCharCode(...uint8Array.slice(0, 4));
-      
-      console.log("PDF header:", header);
-      
-      if (header !== "%PDF") {
-        throw new Error("Arquivo baixado não é um PDF válido");
-      }
-
-      // Convert to base64 directly from arrayBuffer
-      let binary = '';
-      const bytes = new Uint8Array(arrayBuffer);
-      const len = bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64Content = btoa(binary);
-
-      console.log("Base64 length:", base64Content.length);
-
-      // Send email with attachment
+      // Send email with link to PDF
       const { error } = await supabase.functions.invoke("send-email", {
         body: {
           to: emailTo,
           subject: `Orçamento #${order.order_number} - Cronos Brindes`,
           html: `
-            <h2>Orçamento #${order.order_number}</h2>
-            <p>Olá ${order.profiles?.contato || ""},</p>
-            <p>Segue em anexo o orçamento solicitado.</p>
-            <p>Qualquer dúvida, estamos à disposição.</p>
-            <br>
-            <p>Atenciosamente,<br>
-            <strong>Cronos Brindes Corporativos</strong><br>
-            comercial@cronosbrindes.com.br</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">
+                Orçamento #${order.order_number}
+              </h2>
+              <p style="font-size: 16px; color: #555;">
+                Olá ${order.profiles?.contato || ""},
+              </p>
+              <p style="font-size: 14px; color: #666; line-height: 1.6;">
+                Seu orçamento está pronto! Clique no botão abaixo para visualizar:
+              </p>
+              <div style="text-align: center; margin: 40px 0;">
+                <a href="${signedUrlData.signedUrl}" 
+                   style="background-color: #4CAF50; color: white; padding: 15px 40px; 
+                          text-decoration: none; display: inline-block; font-size: 16px; 
+                          border-radius: 5px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                  📄 Ver Orçamento
+                </a>
+              </div>
+              <p style="color: #999; font-size: 12px; font-style: italic; text-align: center;">
+                Este link é válido por 7 dias.
+              </p>
+              <p style="font-size: 14px; color: #666; margin-top: 30px;">
+                Qualquer dúvida, estamos à disposição.
+              </p>
+              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="font-size: 14px; color: #555; margin: 5px 0;">
+                  Atenciosamente,<br>
+                  <strong style="color: #333;">Cronos Brindes Corporativos</strong><br>
+                  <a href="mailto:comercial@cronosbrindes.com.br" style="color: #4CAF50;">
+                    comercial@cronosbrindes.com.br
+                  </a>
+                </p>
+              </div>
+            </div>
           `,
-          attachments: [
-            {
-              filename: `orcamento-${order.order_number}.pdf`,
-              content: base64Content,
-              contentType: "application/pdf",
-            },
-          ],
         },
       });
 
