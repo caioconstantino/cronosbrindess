@@ -154,6 +154,7 @@ export default function Usuarios() {
         body: {
           email: newUserEmail,
           password: newUserPassword,
+          role: newUserRole, // Pass the selected role
         },
       });
 
