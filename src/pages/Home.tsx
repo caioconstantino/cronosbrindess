@@ -107,42 +107,6 @@ export default function Home() {
 
       <ClientsCarousel />
 
-      {/* Hero Section */}
-      <section className="relative bg-gradient-hero text-primary-foreground py-16 md:py-28 px-4 overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-accent rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary-foreground rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        </div>
-        
-        <div className="container mx-auto text-center relative z-10">
-          <div className="max-w-4xl mx-auto">
-            <div className="inline-block px-5 py-2 bg-accent/20 backdrop-blur-sm text-accent-foreground rounded-full text-sm md:text-base font-semibold mb-6 animate-fade-in">
-              ✨ Sua parceira em brindes corporativos
-            </div>
-            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold mb-6 md:mb-8 drop-shadow-2xl leading-tight animate-fade-in" style={{ animationDelay: '0.1s' }}>
-              Solicite seu Orçamento
-            </h1>
-            <p className="text-xl md:text-2xl lg:text-3xl mb-8 md:mb-12 opacity-95 leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              Produtos de qualidade com atendimento personalizado
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in" style={{ animationDelay: '0.3s' }}>
-              <Link to="/produtos">
-                <Button size="lg" className="text-base md:text-xl bg-accent text-accent-foreground hover:shadow-glow hover:scale-105 font-bold px-8 md:px-12 py-6 md:py-7 transition-all">
-                  Ver Produtos
-                  <ArrowRight className="ml-2 h-5 md:h-6 w-5 md:w-6" />
-                </Button>
-              </Link>
-              <Link to="/produtos">
-                <Button size="lg" variant="outline" className="text-base md:text-xl border-2 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary font-bold px-8 md:px-12 py-6 md:py-7 transition-all">
-                  Falar com Especialista
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Categories */}
       {categories.length > 0 && (
         <section className="py-12 md:py-20 px-4 bg-gradient-to-b from-background to-muted/30">
@@ -241,19 +205,39 @@ export default function Home() {
       {/* Feature Section */}
       <FeatureSection />
 
-      {/* CTA Section */}
-      <section className="py-12 md:py-16 px-4 bg-primary text-primary-foreground relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-hero opacity-50"></div>
+      {/* Hero Section - Solicite seu Orçamento */}
+      <section className="relative bg-gradient-hero text-primary-foreground py-16 md:py-28 px-4 overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-accent rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary-foreground rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+        
         <div className="container mx-auto text-center relative z-10">
-          <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">Pronto para fazer seu pedido?</h2>
-          <p className="text-base md:text-xl mb-6 md:mb-8 opacity-90">
-            Monte seu carrinho e solicite um orçamento personalizado
-          </p>
-          <Link to="/produtos">
-            <Button size="lg" className="bg-accent text-accent-foreground hover:opacity-90 shadow-glow font-semibold text-base md:text-lg">
-              Começar Agora
-            </Button>
-          </Link>
+          <div className="max-w-4xl mx-auto">
+            <div className="inline-block px-5 py-2 bg-accent/20 backdrop-blur-sm text-accent-foreground rounded-full text-sm md:text-base font-semibold mb-6 animate-fade-in">
+              ✨ Sua parceira em brindes corporativos
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold mb-6 md:mb-8 drop-shadow-2xl leading-tight animate-fade-in" style={{ animationDelay: '0.1s' }}>
+              Solicite seu Orçamento
+            </h1>
+            <p className="text-xl md:text-2xl lg:text-3xl mb-8 md:mb-12 opacity-95 leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              Produtos de qualidade com atendimento personalizado
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in" style={{ animationDelay: '0.3s' }}>
+              <Link to="/produtos">
+                <Button size="lg" className="text-base md:text-xl bg-accent text-accent-foreground hover:shadow-glow hover:scale-105 font-bold px-8 md:px-12 py-6 md:py-7 transition-all">
+                  Ver Produtos
+                  <ArrowRight className="ml-2 h-5 md:h-6 w-5 md:w-6" />
+                </Button>
+              </Link>
+              <Link to="/produtos">
+                <Button size="lg" variant="outline" className="text-base md:text-xl border-2 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary font-bold px-8 md:px-12 py-6 md:py-7 transition-all">
+                  Falar com Especialista
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
     </div>
