@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Package, ShoppingCart, Users, Layers, Mail } from "lucide-react";
+import { Package, ShoppingCart, Users, Layers } from "lucide-react";
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -50,13 +49,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-4xl font-bold">Dashboard Admin</h1>
-        <Button onClick={() => navigate("/admin/email-settings")} variant="outline" className="gap-2">
-          <Mail className="h-4 w-4" />
-          Configurar Emails
-        </Button>
-      </div>
+      <h1 className="text-4xl font-bold mb-8">Dashboard Admin</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
