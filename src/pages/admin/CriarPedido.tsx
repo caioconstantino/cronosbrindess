@@ -34,7 +34,7 @@ type OrderItem = {
 
 export default function CriarPedido() {
   const navigate = useNavigate();
-  const { isAdmin, isVendedor, loading: authLoading } = useAuth();
+  const { user, isAdmin, isVendedor, loading: authLoading } = useAuth();
   
   // Cliente
   const [empresa, setEmpresa] = useState("");
@@ -191,11 +191,24 @@ export default function CriarPedido() {
         throw profileError;
       }
 
+      // Se vendedor criou o pedido, atribuir o cliente a ele
+      if (isVendedor && user?.id) {
+        const { error: assignError } = await supabase
+          .from("profiles")
+          .update({ assigned_salesperson_id: user.id })
+          .eq("email", email);
+
+        if (assignError) {
+          console.error("Error assigning salesperson:", assignError);
+        }
+      }
+
       // Criar pedido
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
           customer_email: email,
+          user_id: user?.id || null,
           total: calculateTotal(),
           notes: notes || null,
           payment_terms: paymentTerms,
