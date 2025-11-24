@@ -440,49 +440,45 @@ export default function EditarPedido() {
       const pdf = await generatePDF(false);
       if (!pdf) {
         toast.error("Erro ao gerar PDF");
+        setSendingEmail(false);
         return;
       }
 
-      // Convert PDF to base64
-      const pdfBlob = pdf.output("blob");
-      const reader = new FileReader();
-      
-      reader.onloadend = async () => {
-        const base64data = reader.result as string;
-        const base64Content = base64data.split(',')[1];
+      // Convert PDF to base64 using arraybuffer
+      const pdfOutput = pdf.output("arraybuffer");
+      const base64Content = btoa(
+        new Uint8Array(pdfOutput).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
 
-        // Send email with attachment
-        const { error } = await supabase.functions.invoke("send-email", {
-          body: {
-            to: emailTo,
-            subject: `Orçamento #${order.order_number} - Cronos Brindes`,
-            html: `
-              <h2>Orçamento #${order.order_number}</h2>
-              <p>Olá ${order.profiles?.contato || ""},</p>
-              <p>Segue em anexo o orçamento solicitado.</p>
-              <p>Qualquer dúvida, estamos à disposição.</p>
-              <br>
-              <p>Atenciosamente,<br>
-              <strong>Cronos Brindes Corporativos</strong><br>
-              comercial@cronosbrindes.com.br</p>
-            `,
-            attachments: [
-              {
-                filename: `orcamento-${order.order_number}.pdf`,
-                content: base64Content,
-                contentType: "application/pdf",
-              },
-            ],
-          },
-        });
+      // Send email with attachment
+      const { error } = await supabase.functions.invoke("send-email", {
+        body: {
+          to: emailTo,
+          subject: `Orçamento #${order.order_number} - Cronos Brindes`,
+          html: `
+            <h2>Orçamento #${order.order_number}</h2>
+            <p>Olá ${order.profiles?.contato || ""},</p>
+            <p>Segue em anexo o orçamento solicitado.</p>
+            <p>Qualquer dúvida, estamos à disposição.</p>
+            <br>
+            <p>Atenciosamente,<br>
+            <strong>Cronos Brindes Corporativos</strong><br>
+            comercial@cronosbrindes.com.br</p>
+          `,
+          attachments: [
+            {
+              filename: `orcamento-${order.order_number}.pdf`,
+              content: base64Content,
+              contentType: "application/pdf",
+            },
+          ],
+        },
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        toast.success("Orçamento enviado com sucesso!");
-        setEmailDialogOpen(false);
-      };
-
-      reader.readAsDataURL(pdfBlob);
+      toast.success("Orçamento enviado com sucesso!");
+      setEmailDialogOpen(false);
     } catch (error: any) {
       console.error("Error sending email:", error);
       toast.error("Erro ao enviar orçamento: " + error.message);
