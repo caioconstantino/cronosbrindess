@@ -18,7 +18,7 @@ export default function VendedorLayout() {
   useEffect(() => {
     if (!loading) {
       if (!user || !isVendedor) {
-        navigate("/admin/auth");
+        navigate("/login");
       }
     }
   }, [user, isVendedor, loading, navigate]);
