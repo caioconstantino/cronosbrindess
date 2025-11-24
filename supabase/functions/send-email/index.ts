@@ -50,11 +50,25 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Add attachments if provided
     if (attachments && attachments.length > 0) {
-      emailConfig.attachments = attachments.map(att => ({
-        filename: att.filename,
-        content: Uint8Array.from(atob(att.content), c => c.charCodeAt(0)),
-        contentType: att.contentType,
-      }));
+      console.log('Processing attachments:', attachments.length);
+      emailConfig.attachments = attachments.map(att => {
+        console.log('Attachment:', att.filename, 'Base64 length:', att.content.length);
+        
+        // Decode base64 properly for binary data
+        const binaryString = atob(att.content);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        console.log('Decoded bytes length:', bytes.length);
+        
+        return {
+          filename: att.filename,
+          content: bytes,
+          contentType: att.contentType,
+        };
+      });
     }
 
     await client.send(emailConfig);
