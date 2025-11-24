@@ -20,7 +20,8 @@ const navigation = [
 const settingsNavigation = [
   { name: "Banners", href: "/admin/configuracoes/banners", icon: Image, resource: "banners" },
   { name: "Clientes", href: "/admin/configuracoes/clientes", icon: Building2, resource: "site_clientes" },
-  { name: "Email", href: "/admin/configuracoes/email", icon: Mail, resource: "usuarios" },
+  { name: "Email - Configuração", href: "/admin/configuracoes/email", icon: Mail, resource: "usuarios" },
+  { name: "Email - Templates", href: "/admin/configuracoes/email/templates", icon: Mail, resource: "usuarios" },
   { name: "Permissões", href: "/admin/configuracoes/permissoes", icon: Shield, resource: "usuarios" },
 ];
 
