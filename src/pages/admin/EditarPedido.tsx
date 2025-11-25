@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ArrowLeft, Download, Mail } from "lucide-react";
+import { ArrowLeft, Download, Mail, Trash2, Plus } from "lucide-react";
 import jsPDF from "jspdf";
 import logoImage from "@/assets/logo-cronos.png";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type OrderItem = {
   id: string;
@@ -54,6 +55,13 @@ type Order = {
   } | null;
 };
 
+type Product = {
+  id: string;
+  name: string;
+  image_url: string | null;
+  price: number | null;
+};
+
 export default function EditarPedido() {
   const { id } = useParams();
   const [order, setOrder] = useState<Order | null>(null);
@@ -64,6 +72,9 @@ export default function EditarPedido() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [pdfGenerated, setPdfGenerated] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [newItemQuantity, setNewItemQuantity] = useState<number>(1);
   const { user, isAdmin, isVendedor, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -76,8 +87,23 @@ export default function EditarPedido() {
     }
     if (id) {
       loadOrder();
+      loadProducts();
     }
   }, [id, isAdmin, isVendedor, authLoading]);
+
+  const loadProducts = async () => {
+    const { data, error } = await supabase
+      .from("products")
+      .select("id, name, image_url, price")
+      .eq("active", true)
+      .order("name");
+    
+    if (error) {
+      console.error("Error loading products:", error);
+    } else if (data) {
+      setProducts(data);
+    }
+  };
 
   const loadOrder = async () => {
     if (!id) return;
@@ -186,6 +212,73 @@ export default function EditarPedido() {
     ));
   };
 
+  const updateItemQuantity = (itemId: string, newQuantity: string) => {
+    const quantity = parseInt(newQuantity) || 1;
+    if (quantity < 1) return;
+    setItems(items.map(item => 
+      item.id === itemId ? { ...item, quantity } : item
+    ));
+  };
+
+  const removeItem = async (itemId: string) => {
+    if (!confirm("Deseja realmente remover este item?")) return;
+
+    const { error } = await supabase
+      .from("order_items")
+      .delete()
+      .eq("id", itemId);
+
+    if (error) {
+      toast.error("Erro ao remover item");
+      return;
+    }
+
+    setItems(items.filter(item => item.id !== itemId));
+    toast.success("Item removido com sucesso");
+  };
+
+  const addItem = async () => {
+    if (!selectedProductId || !id) {
+      toast.error("Selecione um produto");
+      return;
+    }
+
+    const selectedProduct = products.find(p => p.id === selectedProductId);
+    if (!selectedProduct) return;
+
+    const { data, error } = await supabase
+      .from("order_items")
+      .insert({
+        order_id: id,
+        product_id: selectedProductId,
+        quantity: newItemQuantity,
+        price: selectedProduct.price || 0,
+      })
+      .select(`
+        id,
+        product_id,
+        quantity,
+        price,
+        products (
+          name,
+          image_url
+        )
+      `)
+      .single();
+
+    if (error) {
+      toast.error("Erro ao adicionar item");
+      return;
+    }
+
+    if (data) {
+      setItems([...items, data as any]);
+      setSelectedProductId("");
+      setNewItemQuantity(1);
+      toast.success("Item adicionado com sucesso");
+    }
+  };
+
   const calculateTotal = () => {
     return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
@@ -211,11 +304,14 @@ export default function EditarPedido() {
       return;
     }
 
-    // Update each item price
+    // Update each item price and quantity
     for (const item of items) {
       const { error: itemError } = await supabase
         .from("order_items")
-        .update({ price: item.price })
+        .update({ 
+          price: item.price,
+          quantity: item.quantity 
+        })
         .eq("id", item.id);
 
       if (itemError) {
@@ -765,9 +861,18 @@ export default function EditarPedido() {
                 )}
                 <div className="flex-1">
                   <p className="font-medium">{item.products.name}</p>
-                  <p className="text-sm text-muted-foreground">Quantidade: {item.quantity}</p>
                 </div>
                 <div className="flex items-center gap-4">
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Quantidade</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(e) => updateItemQuantity(item.id, e.target.value)}
+                      className="w-24"
+                    />
+                  </div>
                   <div>
                     <label className="text-sm text-muted-foreground block mb-1">Valor Unitário</label>
                     <Input
@@ -785,9 +890,49 @@ export default function EditarPedido() {
                       R$ {(item.price * item.quantity).toFixed(2)}
                     </p>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeItem(item.id)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             ))}
+            
+            {/* Add new item section */}
+            <div className="flex items-center gap-4 p-4 border rounded-lg border-dashed">
+              <div className="flex-1">
+                <label className="text-sm text-muted-foreground block mb-2">Adicionar Produto</label>
+                <Select value={selectedProductId} onValueChange={setSelectedProductId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um produto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-24">
+                <label className="text-sm text-muted-foreground block mb-2">Qtd</label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={newItemQuantity}
+                  onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
+                />
+              </div>
+              <Button onClick={addItem} className="mt-6" disabled={!selectedProductId}>
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar
+              </Button>
+            </div>
           </div>
 
           <div className="mt-6 pt-6 border-t flex justify-end">
