@@ -1,7 +1,10 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { VariantSelectionDialog } from "./VariantSelectionDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProductCardProps {
   id: string;
@@ -9,7 +12,7 @@ interface ProductCardProps {
   description?: string;
   price?: number;
   imageUrl?: string;
-  onAddToCart: () => void;
+  onAddToCart: (selectedVariants?: Record<string, string>) => void;
 }
 
 export const ProductCard = ({
@@ -21,9 +24,47 @@ export const ProductCard = ({
   onAddToCart,
 }: ProductCardProps) => {
   const navigate = useNavigate();
+  const [variantDialogOpen, setVariantDialogOpen] = useState(false);
+  const [hasVariants, setHasVariants] = useState(false);
+
+  useEffect(() => {
+    checkVariants();
+  }, [id]);
+
+  const checkVariants = async () => {
+    const { data } = await supabase
+      .from("product_variants")
+      .select("id")
+      .eq("product_id", id)
+      .limit(1);
+    
+    setHasVariants(data && data.length > 0);
+  };
+
+  const handleAddToCart = () => {
+    if (hasVariants) {
+      setVariantDialogOpen(true);
+    } else {
+      onAddToCart();
+    }
+  };
+
+  const handleVariantsConfirm = (selectedVariants: Record<string, string>) => {
+    onAddToCart(selectedVariants);
+  };
 
   return (
-    <Card className="overflow-hidden hover-lift group border-0 shadow-card bg-gradient-card">
+    <>
+      <VariantSelectionDialog
+        open={variantDialogOpen}
+        onOpenChange={setVariantDialogOpen}
+        productId={id}
+        productName={name}
+        productImage={imageUrl}
+        onConfirm={handleVariantsConfirm}
+      />
+      
+      <Card className="overflow-hidden hover-lift group border-0 shadow-card bg-gradient-card">
       <div 
         className="aspect-square overflow-hidden bg-muted cursor-pointer relative"
         onClick={() => navigate(`/produtos/${id}`)}
@@ -82,7 +123,7 @@ export const ProductCard = ({
         <Button 
           onClick={(e) => {
             e.stopPropagation();
-            onAddToCart();
+            handleAddToCart();
           }} 
           size="sm"
           className="flex-1 bg-gradient-accent hover:shadow-glow text-xs md:text-sm font-semibold"
@@ -93,5 +134,6 @@ export const ProductCard = ({
         </Button>
       </CardFooter>
     </Card>
+    </>
   );
 };
