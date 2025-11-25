@@ -389,6 +389,9 @@ export default function EditarPedido() {
         y += 5;
         pdf.text("comercial@cronosbrindes.com.br", pageWidth / 2, y, { align: "center" });
         
+        y += 5;
+        pdf.text("WhatsApp: (11) 93726-0395", pageWidth / 2, y, { align: "center" });
+        
         y += 10;
         pdf.line(margin, y, pageWidth - margin, y);
         y += 10;
