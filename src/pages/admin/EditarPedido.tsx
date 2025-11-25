@@ -12,7 +12,7 @@ import jsPDF from "jspdf";
 import logoImage from "@/assets/logo-cronos.png";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useRef } from "react";
 
 type OrderItem = {
   id: string;
@@ -73,10 +73,13 @@ export default function EditarPedido() {
   const [pdfGenerated, setPdfGenerated] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [productSearch, setProductSearch] = useState("");
+  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
   const [newItemQuantity, setNewItemQuantity] = useState<number>(1);
   const { user, isAdmin, isVendedor, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const productSearchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -90,6 +93,17 @@ export default function EditarPedido() {
       loadProducts();
     }
   }, [id, isAdmin, isVendedor, authLoading]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (productSearchRef.current && !productSearchRef.current.contains(event.target as Node)) {
+        setShowProductSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const loadProducts = async () => {
     const { data, error } = await supabase
@@ -238,19 +252,16 @@ export default function EditarPedido() {
   };
 
   const addItem = async () => {
-    if (!selectedProductId || !id) {
+    if (!selectedProduct || !id) {
       toast.error("Selecione um produto");
       return;
     }
-
-    const selectedProduct = products.find(p => p.id === selectedProductId);
-    if (!selectedProduct) return;
 
     const { data, error } = await supabase
       .from("order_items")
       .insert({
         order_id: id,
-        product_id: selectedProductId,
+        product_id: selectedProduct.id,
         quantity: newItemQuantity,
         price: selectedProduct.price || 0,
       })
@@ -273,10 +284,21 @@ export default function EditarPedido() {
 
     if (data) {
       setItems([...items, data as any]);
-      setSelectedProductId("");
+      setSelectedProduct(null);
+      setProductSearch("");
       setNewItemQuantity(1);
       toast.success("Item adicionado com sucesso");
     }
+  };
+
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(productSearch.toLowerCase())
+  );
+
+  const handleProductSelect = (product: Product) => {
+    setSelectedProduct(product);
+    setProductSearch(product.name);
+    setShowProductSuggestions(false);
   };
 
   const calculateTotal = () => {
@@ -904,20 +926,49 @@ export default function EditarPedido() {
             
             {/* Add new item section */}
             <div className="flex items-center gap-4 p-4 border rounded-lg border-dashed">
-              <div className="flex-1">
+              <div className="flex-1 relative" ref={productSearchRef}>
                 <label className="text-sm text-muted-foreground block mb-2">Adicionar Produto</label>
-                <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um produto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products.map((product) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        {product.name}
-                      </SelectItem>
+                <Input
+                  type="text"
+                  placeholder="Digite o nome do produto..."
+                  value={productSearch}
+                  onChange={(e) => {
+                    setProductSearch(e.target.value);
+                    setShowProductSuggestions(true);
+                    setSelectedProduct(null);
+                  }}
+                  onFocus={() => setShowProductSuggestions(true)}
+                />
+                
+                {/* Suggestions dropdown */}
+                {showProductSuggestions && productSearch && filteredProducts.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                    {filteredProducts.map((product) => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => handleProductSelect(product)}
+                        className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border/50 last:border-0 flex items-center gap-3"
+                      >
+                        {product.image_url && (
+                          <img 
+                            src={product.image_url} 
+                            alt={product.name}
+                            className="w-10 h-10 object-cover rounded"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <p className="font-medium">{product.name}</p>
+                          {product.price && (
+                            <p className="text-sm text-muted-foreground">
+                              R$ {product.price.toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+                      </button>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                )}
               </div>
               <div className="w-24">
                 <label className="text-sm text-muted-foreground block mb-2">Qtd</label>
@@ -928,7 +979,7 @@ export default function EditarPedido() {
                   onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
                 />
               </div>
-              <Button onClick={addItem} className="mt-6" disabled={!selectedProductId}>
+              <Button onClick={addItem} className="mt-6" disabled={!selectedProduct}>
                 <Plus className="h-4 w-4 mr-2" />
                 Adicionar
               </Button>
