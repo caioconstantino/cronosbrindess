@@ -13,13 +13,15 @@ export const useAuth = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          setLoading(true);
-          await checkUserRoles(session.user.id);
+          // Defer Supabase calls with setTimeout to prevent deadlock
+          setTimeout(() => {
+            checkUserRoles(session.user.id);
+          }, 0);
         } else {
           setIsAdmin(false);
           setIsVendedor(false);
