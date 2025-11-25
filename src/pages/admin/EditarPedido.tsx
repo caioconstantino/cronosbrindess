@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { ArrowLeft, Download, Mail, Trash2, Plus } from "lucide-react";
 import jsPDF from "jspdf";
 import logoImage from "@/assets/logo-cronos.png";
+import whatsappIcon from "@/assets/whatsapp-icon.png";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useRef } from "react";
@@ -390,7 +391,22 @@ export default function EditarPedido() {
         pdf.text("comercial@cronosbrindes.com.br", pageWidth / 2, y, { align: "center" });
         
         y += 5;
-        pdf.text("WhatsApp: (11) 93726-0395", pageWidth / 2, y, { align: "center" });
+        // Add WhatsApp icon
+        try {
+          const whatsappImg = new Image();
+          whatsappImg.src = whatsappIcon;
+          await new Promise((resolve) => {
+            whatsappImg.onload = resolve;
+          });
+          const iconSize = 4;
+          const phoneText = "(11) 93726-0395";
+          const phoneTextWidth = pdf.getTextWidth(phoneText);
+          const iconX = (pageWidth - phoneTextWidth) / 2 - iconSize - 2;
+          pdf.addImage(whatsappImg, "PNG", iconX, y - 3, iconSize, iconSize);
+        } catch (error) {
+          console.error("Error loading WhatsApp icon:", error);
+        }
+        pdf.text("(11) 93726-0395", pageWidth / 2, y, { align: "center" });
         
         y += 10;
         pdf.line(margin, y, pageWidth - margin, y);
