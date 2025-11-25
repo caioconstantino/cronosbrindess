@@ -172,26 +172,32 @@ export type Database = {
       order_items: {
         Row: {
           created_at: string
+          custom_image_url: string | null
+          custom_name: string | null
           id: string
           order_id: string
           price: number
-          product_id: string
+          product_id: string | null
           quantity: number
         }
         Insert: {
           created_at?: string
+          custom_image_url?: string | null
+          custom_name?: string | null
           id?: string
           order_id: string
           price: number
-          product_id: string
+          product_id?: string | null
           quantity?: number
         }
         Update: {
           created_at?: string
+          custom_image_url?: string | null
+          custom_name?: string | null
           id?: string
           order_id?: string
           price?: number
-          product_id?: string
+          product_id?: string | null
           quantity?: number
         }
         Relationships: [

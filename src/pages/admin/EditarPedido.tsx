@@ -14,16 +14,19 @@ import whatsappIcon from "@/assets/whatsapp-icon.png";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useRef } from "react";
+import { ImageUpload } from "@/components/ImageUpload";
 
 type OrderItem = {
   id: string;
-  product_id: string;
+  product_id: string | null;
   quantity: number;
   price: number;
-  products: {
+  custom_name?: string | null;
+  custom_image_url?: string | null;
+  products?: {
     name: string;
     image_url: string | null;
-  };
+  } | null;
 };
 
 type Order = {
@@ -78,6 +81,11 @@ export default function EditarPedido() {
   const [productSearch, setProductSearch] = useState("");
   const [showProductSuggestions, setShowProductSuggestions] = useState(false);
   const [newItemQuantity, setNewItemQuantity] = useState<number>(1);
+  const [customItemDialogOpen, setCustomItemDialogOpen] = useState(false);
+  const [customItemName, setCustomItemName] = useState("");
+  const [customItemPrice, setCustomItemPrice] = useState<number>(0);
+  const [customItemQuantity, setCustomItemQuantity] = useState<number>(1);
+  const [customItemImage, setCustomItemImage] = useState("");
   const { user, isAdmin, isVendedor, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const productSearchRef = useRef<HTMLDivElement>(null);
@@ -182,19 +190,21 @@ export default function EditarPedido() {
     }
 
     // Load order items with products
-    const { data: itemsData, error: itemsError } = await supabase
-      .from("order_items")
-      .select(`
-        id,
-        product_id,
-        quantity,
-        price,
-        products (
-          name,
-          image_url
-        )
-      `)
-      .eq("order_id", id);
+      const { data: itemsData, error: itemsError } = await supabase
+        .from("order_items")
+        .select(`
+          id,
+          product_id,
+          quantity,
+          price,
+          custom_name,
+          custom_image_url,
+          products (
+            name,
+            image_url
+          )
+        `)
+        .eq("order_id", id);
 
     if (itemsError) {
       toast.error("Erro ao carregar itens do pedido");
@@ -271,6 +281,8 @@ export default function EditarPedido() {
         product_id,
         quantity,
         price,
+        custom_name,
+        custom_image_url,
         products (
           name,
           image_url
@@ -289,6 +301,53 @@ export default function EditarPedido() {
       setProductSearch("");
       setNewItemQuantity(1);
       toast.success("Item adicionado com sucesso");
+    }
+  };
+
+  const addCustomItem = async () => {
+    if (!customItemName.trim() || !id) {
+      toast.error("Preencha o nome do item");
+      return;
+    }
+
+    if (customItemPrice <= 0) {
+      toast.error("Preencha um valor válido");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("order_items")
+      .insert({
+        order_id: id,
+        product_id: null,
+        quantity: customItemQuantity,
+        price: customItemPrice,
+        custom_name: customItemName,
+        custom_image_url: customItemImage || null,
+      })
+      .select(`
+        id,
+        product_id,
+        quantity,
+        price,
+        custom_name,
+        custom_image_url
+      `)
+      .single();
+
+    if (error) {
+      toast.error("Erro ao adicionar item customizado");
+      return;
+    }
+
+    if (data) {
+      setItems([...items, data as any]);
+      setCustomItemDialogOpen(false);
+      setCustomItemName("");
+      setCustomItemPrice(0);
+      setCustomItemQuantity(1);
+      setCustomItemImage("");
+      toast.success("Item customizado adicionado com sucesso");
     }
   };
 
@@ -480,11 +539,15 @@ export default function EditarPedido() {
       const textX = margin + 24;
       const imgSize = 18;
 
-      if (item.products.image_url) {
+      // Handle both custom items and catalog products
+      const itemImage = item.custom_image_url || item.products?.image_url;
+      const itemName = item.custom_name || item.products?.name || "Item sem nome";
+
+      if (itemImage) {
         try {
           const img = new Image();
           img.crossOrigin = "anonymous";
-          img.src = item.products.image_url;
+          img.src = itemImage;
           await new Promise((resolve) => {
             img.onload = resolve;
             img.onerror = resolve;
@@ -503,9 +566,8 @@ export default function EditarPedido() {
         }
       }
 
-      const productName = item.products.name;
       const descWidth = pageWidth - 2 * margin - 120;
-      const lines = pdf.splitTextToSize(productName, descWidth);
+      const lines = pdf.splitTextToSize(itemName, descWidth);
       
       pdf.text(lines, textX, y);
       pdf.text(item.quantity.toString(), pageWidth - margin - 60, y);
@@ -765,6 +827,68 @@ export default function EditarPedido() {
 
   return (
     <div className="space-y-6">
+      {/* Custom Item Dialog */}
+      <Dialog open={customItemDialogOpen} onOpenChange={setCustomItemDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Adicionar Item Personalizado</DialogTitle>
+            <DialogDescription>
+              Adicione um item específico para este orçamento com foto, nome e valor próprios.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <ImageUpload
+              bucket="product-images"
+              currentImageUrl={customItemImage}
+              onImageUploaded={setCustomItemImage}
+              label="Imagem do Item"
+            />
+            <div>
+              <Label htmlFor="custom-name">Nome do Item</Label>
+              <Input
+                id="custom-name"
+                value={customItemName}
+                onChange={(e) => setCustomItemName(e.target.value)}
+                placeholder="Ex: Caneta Personalizada Cliente X"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="custom-price">Valor Unitário (R$)</Label>
+                <Input
+                  id="custom-price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={customItemPrice}
+                  onChange={(e) => setCustomItemPrice(parseFloat(e.target.value) || 0)}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="custom-quantity">Quantidade</Label>
+                <Input
+                  id="custom-quantity"
+                  type="number"
+                  min="1"
+                  value={customItemQuantity}
+                  onChange={(e) => setCustomItemQuantity(parseInt(e.target.value) || 1)}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCustomItemDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={addCustomItem}>
+              Adicionar Item
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Dialog */}
       <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -901,18 +1025,25 @@ export default function EditarPedido() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {items.map((item) => (
-              <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                {item.products.image_url && (
-                  <img 
-                    src={item.products.image_url} 
-                    alt={item.products.name}
-                    className="w-20 h-20 object-cover rounded"
-                  />
-                )}
-                <div className="flex-1">
-                  <p className="font-medium">{item.products.name}</p>
-                </div>
+            {items.map((item) => {
+              const itemName = item.custom_name || item.products?.name || "Item sem nome";
+              const itemImage = item.custom_image_url || item.products?.image_url;
+              
+              return (
+                <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                  {itemImage && (
+                    <img 
+                      src={itemImage} 
+                      alt={itemName}
+                      className="w-20 h-20 object-cover rounded"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-medium">{itemName}</p>
+                    {item.custom_name && (
+                      <span className="text-xs text-muted-foreground">Item Customizado</span>
+                    )}
+                  </div>
                 <div className="flex items-center gap-4">
                   <div>
                     <label className="text-sm text-muted-foreground block mb-1">Quantidade</label>
@@ -951,67 +1082,83 @@ export default function EditarPedido() {
                   </Button>
                 </div>
               </div>
-            ))}
+            )})}
+
             
             {/* Add new item section */}
-            <div className="flex items-center gap-4 p-4 border rounded-lg border-dashed">
-              <div className="flex-1 relative" ref={productSearchRef}>
-                <label className="text-sm text-muted-foreground block mb-2">Adicionar Produto</label>
-                <Input
-                  type="text"
-                  placeholder="Digite o nome do produto..."
-                  value={productSearch}
-                  onChange={(e) => {
-                    setProductSearch(e.target.value);
-                    setShowProductSuggestions(true);
-                    setSelectedProduct(null);
-                  }}
-                  onFocus={() => setShowProductSuggestions(true)}
-                />
-                
-                {/* Suggestions dropdown */}
-                {showProductSuggestions && productSearch && filteredProducts.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
-                    {filteredProducts.map((product) => (
-                      <button
-                        key={product.id}
-                        type="button"
-                        onClick={() => handleProductSelect(product)}
-                        className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border/50 last:border-0 flex items-center gap-3"
-                      >
-                        {product.image_url && (
-                          <img 
-                            src={product.image_url} 
-                            alt={product.name}
-                            className="w-10 h-10 object-cover rounded"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <p className="font-medium">{product.name}</p>
-                          {product.price && (
-                            <p className="text-sm text-muted-foreground">
-                              R$ {product.price.toFixed(2)}
-                            </p>
+            <div className="space-y-4">
+              {/* Add product from catalog */}
+              <div className="flex items-center gap-4 p-4 border rounded-lg border-dashed">
+                <div className="flex-1 relative" ref={productSearchRef}>
+                  <label className="text-sm text-muted-foreground block mb-2">Adicionar Produto do Catálogo</label>
+                  <Input
+                    type="text"
+                    placeholder="Digite o nome do produto..."
+                    value={productSearch}
+                    onChange={(e) => {
+                      setProductSearch(e.target.value);
+                      setShowProductSuggestions(true);
+                      setSelectedProduct(null);
+                    }}
+                    onFocus={() => setShowProductSuggestions(true)}
+                  />
+                  
+                  {/* Suggestions dropdown */}
+                  {showProductSuggestions && productSearch && filteredProducts.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                      {filteredProducts.map((product) => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          onClick={() => handleProductSelect(product)}
+                          className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border/50 last:border-0 flex items-center gap-3"
+                        >
+                          {product.image_url && (
+                            <img 
+                              src={product.image_url} 
+                              alt={product.name}
+                              className="w-10 h-10 object-cover rounded"
+                            />
                           )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                          <div className="flex-1">
+                            <p className="font-medium">{product.name}</p>
+                            {product.price && (
+                              <p className="text-sm text-muted-foreground">
+                                R$ {product.price.toFixed(2)}
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="w-24">
+                  <label className="text-sm text-muted-foreground block mb-2">Qtd</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={newItemQuantity}
+                    onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
+                  />
+                </div>
+                <Button onClick={addItem} className="mt-6" disabled={!selectedProduct}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar
+                </Button>
               </div>
-              <div className="w-24">
-                <label className="text-sm text-muted-foreground block mb-2">Qtd</label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={newItemQuantity}
-                  onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
-                />
+
+              {/* Add custom item button */}
+              <div className="flex items-center justify-center p-4 border rounded-lg border-dashed">
+                <Button 
+                  onClick={() => setCustomItemDialogOpen(true)} 
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Adicionar Item Personalizado
+                </Button>
               </div>
-              <Button onClick={addItem} className="mt-6" disabled={!selectedProduct}>
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar
-              </Button>
             </div>
           </div>
 
