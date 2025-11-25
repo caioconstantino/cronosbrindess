@@ -125,7 +125,7 @@ export default function Checkout() {
       // Calculate total
       const total = cart.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
 
-      // Create order with customer email
+      // Create order with customer email and contact preference
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -133,18 +133,20 @@ export default function Checkout() {
           total,
           notes: formData.notes || null,
           status: "pending",
+          contact_preference: formData.preferencia_contato,
         })
         .select()
         .single();
 
       if (orderError) throw orderError;
 
-      // Create order items
+      // Create order items with selected variants
       const orderItems = cart.map((item) => ({
         order_id: orderData.id,
         product_id: item.id,
         quantity: item.quantity,
         price: item.price || 0,
+        selected_variants: item.selectedVariants || {},
       }));
 
       const { error: itemsError } = await supabase

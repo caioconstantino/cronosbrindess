@@ -179,6 +179,7 @@ export type Database = {
           price: number
           product_id: string | null
           quantity: number
+          selected_variants: Json | null
         }
         Insert: {
           created_at?: string
@@ -189,6 +190,7 @@ export type Database = {
           price: number
           product_id?: string | null
           quantity?: number
+          selected_variants?: Json | null
         }
         Update: {
           created_at?: string
@@ -199,6 +201,7 @@ export type Database = {
           price?: number
           product_id?: string | null
           quantity?: number
+          selected_variants?: Json | null
         }
         Relationships: [
           {
@@ -219,6 +222,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          contact_preference: string | null
           created_at: string
           customer_email: string | null
           delivery_terms: string | null
@@ -233,6 +237,7 @@ export type Database = {
           validity_terms: string | null
         }
         Insert: {
+          contact_preference?: string | null
           created_at?: string
           customer_email?: string | null
           delivery_terms?: string | null
@@ -247,6 +252,7 @@ export type Database = {
           validity_terms?: string | null
         }
         Update: {
+          contact_preference?: string | null
           created_at?: string
           customer_email?: string | null
           delivery_terms?: string | null

@@ -32,6 +32,9 @@ export default function Orders() {
         order_items (
           quantity,
           price,
+          selected_variants,
+          custom_name,
+          custom_image_url,
           products (name, image_url)
         )
       `)
@@ -96,10 +99,10 @@ export default function Orders() {
                   {order.order_items.map((item: any, index: number) => (
                     <div key={index} className="flex gap-4">
                       <div className="w-16 h-16 bg-muted rounded overflow-hidden flex-shrink-0">
-                        {item.products.image_url ? (
+                        {(item.custom_image_url || item.products?.image_url) ? (
                           <img
-                            src={item.products.image_url}
-                            alt={item.products.name}
+                            src={item.custom_image_url || item.products.image_url}
+                            alt={item.custom_name || item.products?.name}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -109,7 +112,16 @@ export default function Orders() {
                         )}
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium">{item.products.name}</p>
+                        <p className="font-medium">{item.custom_name || item.products?.name}</p>
+                        {item.selected_variants && Object.keys(item.selected_variants).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {Object.values(item.selected_variants).map((value: any, idx: number) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {value}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                         <p className="text-sm text-muted-foreground">
                           Quantidade: {item.quantity}
                         </p>
