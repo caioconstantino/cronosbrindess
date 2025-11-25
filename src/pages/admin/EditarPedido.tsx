@@ -353,41 +353,50 @@ export default function EditarPedido() {
 
     try {
       const pdf = new jsPDF();
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const margin = 15;
-    let y = 20;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      
+      // Function to add header to any page
+      const addHeader = async (startY = 20) => {
+        let y = startY;
+        
+        // Add logo
+        try {
+          const img = new Image();
+          img.src = logoImage;
+          await new Promise((resolve) => {
+            img.onload = resolve;
+          });
+          const imgWidth = 40;
+          const imgHeight = (img.height * imgWidth) / img.width;
+          pdf.addImage(img, "PNG", pageWidth / 2 - imgWidth / 2, y, imgWidth, imgHeight);
+          y += imgHeight + 10;
+        } catch (error) {
+          console.error("Error loading logo:", error);
+        }
 
-    // Add logo
-    try {
-      const img = new Image();
-      img.src = logoImage;
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-      const imgWidth = 40;
-      const imgHeight = (img.height * imgWidth) / img.width;
-      pdf.addImage(img, "PNG", pageWidth / 2 - imgWidth / 2, y, imgWidth, imgHeight);
-      y += imgHeight + 10;
-    } catch (error) {
-      console.error("Error loading logo:", error);
-    }
+        // Header text
+        pdf.setFontSize(16);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("CRONOS BRINDES CORPORATIVOS", pageWidth / 2, y, { align: "center" });
+        
+        y += 8;
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "normal");
+        pdf.text("CNPJ: 50.710.018/0001-55", pageWidth / 2, y, { align: "center" });
+        
+        y += 5;
+        pdf.text("comercial@cronosbrindes.com.br", pageWidth / 2, y, { align: "center" });
+        
+        y += 10;
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 10;
+        
+        return y;
+      };
 
-    // Header
-    pdf.setFontSize(16);
-    pdf.setFont("helvetica", "bold");
-    pdf.text("CRONOS BRINDES CORPORATIVOS", pageWidth / 2, y, { align: "center" });
-    
-    y += 8;
-    pdf.setFontSize(10);
-    pdf.setFont("helvetica", "normal");
-    pdf.text("50.710.018/0001-55", pageWidth / 2, y, { align: "center" });
-    
-    y += 5;
-    pdf.text("comercial@cronosbrindes.com.br", pageWidth / 2, y, { align: "center" });
-    
-    y += 10;
-    pdf.line(margin, y, pageWidth - margin, y);
-    y += 10;
+      let y = await addHeader();
 
     // Order info
     pdf.setFontSize(11);
@@ -446,7 +455,7 @@ export default function EditarPedido() {
     for (const item of items) {
       if (y > 270) {
         pdf.addPage();
-        y = 20;
+        y = await addHeader();
       }
 
       const textX = margin + 24;
@@ -502,7 +511,7 @@ export default function EditarPedido() {
     
     if (y > 240) {
       pdf.addPage();
-      y = 20;
+      y = await addHeader();
     }
 
     pdf.setFontSize(10);
@@ -530,7 +539,7 @@ export default function EditarPedido() {
     // Legal terms
     if (y > 200) {
       pdf.addPage();
-      y = 20;
+      y = await addHeader();
     }
 
     pdf.setFontSize(8);
@@ -562,7 +571,7 @@ export default function EditarPedido() {
     for (const term of terms) {
       if (y > 280) {
         pdf.addPage();
-        y = 20;
+        y = await addHeader();
       }
       
       const termLines = pdf.splitTextToSize(term, pageWidth - 2 * margin);
@@ -574,7 +583,8 @@ export default function EditarPedido() {
     y += 10;
     if (y > 250) {
       pdf.addPage();
-      y = 30;
+      y = await addHeader();
+      y += 10;
     }
 
     pdf.setFontSize(10);
