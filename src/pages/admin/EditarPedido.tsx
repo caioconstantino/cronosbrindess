@@ -23,6 +23,7 @@ type OrderItem = {
   price: number;
   custom_name?: string | null;
   custom_image_url?: string | null;
+  selected_variants?: Record<string, string> | null;
   products?: {
     name: string;
     image_url: string | null;
@@ -40,6 +41,7 @@ type Order = {
   payment_terms: string | null;
   delivery_terms: string | null;
   validity_terms: string | null;
+  contact_preference: string | null;
   profiles: {
     empresa: string | null;
     contato: string | null;
@@ -199,6 +201,7 @@ export default function EditarPedido() {
           price,
           custom_name,
           custom_image_url,
+          selected_variants,
           products (
             name,
             image_url
@@ -495,6 +498,18 @@ export default function EditarPedido() {
       pdf.text(`E-mail: ${order.profiles.email || ""}`, margin, y);
       pdf.text(`Telefone: ${order.profiles.telefone || ""}`, margin + 80, y);
       y += 5;
+      
+      // Contact preference
+      if (order.contact_preference) {
+        const preferenceMap: Record<string, string> = {
+          telefone: "Telefone",
+          whatsapp: "WhatsApp", 
+          email: "Email"
+        };
+        pdf.text(`Preferência de Contato: ${preferenceMap[order.contact_preference] || order.contact_preference}`, margin, y);
+        y += 5;
+      }
+      
       if (order.profiles.endereco) {
         pdf.text(`Endereço: ${order.profiles.endereco}, ${order.profiles.numero || ""}`, margin, y);
         y += 5;
@@ -542,6 +557,13 @@ export default function EditarPedido() {
       // Handle both custom items and catalog products
       const itemImage = item.custom_image_url || item.products?.image_url;
       const itemName = item.custom_name || item.products?.name || "Item sem nome";
+      
+      // Add variants to item name if they exist
+      let displayName = itemName;
+      if (item.selected_variants && Object.keys(item.selected_variants).length > 0) {
+        const variantText = Object.values(item.selected_variants).join(", ");
+        displayName = `${itemName} (${variantText})`;
+      }
 
       if (itemImage) {
         try {
@@ -567,7 +589,7 @@ export default function EditarPedido() {
       }
 
       const descWidth = pageWidth - 2 * margin - 120;
-      const lines = pdf.splitTextToSize(itemName, descWidth);
+      const lines = pdf.splitTextToSize(displayName, descWidth);
       
       pdf.text(lines, textX, y);
       pdf.text(item.quantity.toString(), pageWidth - margin - 60, y);
@@ -981,6 +1003,15 @@ export default function EditarPedido() {
             <p className="font-medium">{order.profiles?.telefone || "-"}</p>
           </div>
           <div>
+            <p className="text-sm text-muted-foreground">Preferência de Contato</p>
+            <p className="font-medium">
+              {order.contact_preference === "telefone" && "Telefone"}
+              {order.contact_preference === "whatsapp" && "WhatsApp"}
+              {order.contact_preference === "email" && "Email"}
+              {!order.contact_preference && "-"}
+            </p>
+          </div>
+          <div>
             <p className="text-sm text-muted-foreground">Data do Pedido</p>
             <p className="font-medium">{format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}</p>
           </div>
@@ -1042,6 +1073,15 @@ export default function EditarPedido() {
                     <p className="font-medium">{itemName}</p>
                     {item.custom_name && (
                       <span className="text-xs text-muted-foreground">Item Customizado</span>
+                    )}
+                    {item.selected_variants && Object.keys(item.selected_variants).length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {Object.entries(item.selected_variants).map(([key, value]) => (
+                          <span key={key} className="text-xs px-2 py-0.5 bg-muted rounded">
+                            {value}
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </div>
                 <div className="flex items-center gap-4">
