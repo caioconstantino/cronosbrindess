@@ -48,10 +48,15 @@ export default function Cart() {
     }
   };
 
-  const updateQuantity = (productId: string, change: number) => {
+  // Helper function to create unique item identifier
+  const getItemKey = (item: any) => {
+    return `${item.id}-${JSON.stringify(item.selectedVariants || {})}`;
+  };
+
+  const updateQuantity = (itemIndex: number, change: number) => {
     const newCart = cart
-      .map((item) =>
-        item.id === productId
+      .map((item, idx) =>
+        idx === itemIndex
           ? { ...item, quantity: Math.max(0, item.quantity + change) }
           : item
       )
@@ -61,11 +66,11 @@ export default function Cart() {
     localStorage.setItem("cart", JSON.stringify(newCart));
   };
 
-  const setQuantity = (productId: string, value: string) => {
+  const setQuantity = (itemIndex: number, value: string) => {
     const numValue = parseInt(value) || 0;
     const newCart = cart
-      .map((item) =>
-        item.id === productId
+      .map((item, idx) =>
+        idx === itemIndex
           ? { ...item, quantity: Math.max(1, numValue) }
           : item
       );
@@ -74,8 +79,8 @@ export default function Cart() {
     localStorage.setItem("cart", JSON.stringify(newCart));
   };
 
-  const removeItem = (productId: string) => {
-    const newCart = cart.filter((item) => item.id !== productId);
+  const removeItem = (itemIndex: number) => {
+    const newCart = cart.filter((_, idx) => idx !== itemIndex);
     setCart(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
   };
@@ -107,8 +112,8 @@ export default function Cart() {
         ) : (
           <div className="grid lg:grid-cols-3 gap-6 md:gap-8">
             <div className="lg:col-span-2 space-y-3 md:space-y-4">
-              {cart.map((item) => (
-                <Card key={item.id} className="p-3 md:p-4">
+              {cart.map((item, itemIndex) => (
+                <Card key={getItemKey(item)} className="p-3 md:p-4">
                   <div className="flex gap-3 md:gap-4">
                     <div className="w-20 h-20 md:w-24 md:h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0">
                       {item.image_url ? (
@@ -151,7 +156,7 @@ export default function Cart() {
                           <Button
                             size="icon"
                             variant="outline"
-                            onClick={() => updateQuantity(item.id, -1)}
+                            onClick={() => updateQuantity(itemIndex, -1)}
                             className="h-8 w-8 md:h-10 md:w-10"
                           >
                             <Minus className="h-3 w-3 md:h-4 md:w-4" />
@@ -160,13 +165,13 @@ export default function Cart() {
                             type="number"
                             min="1"
                             value={item.quantity}
-                            onChange={(e) => setQuantity(item.id, e.target.value)}
+                            onChange={(e) => setQuantity(itemIndex, e.target.value)}
                             className="w-16 md:w-20 text-center h-8 md:h-10"
                           />
                           <Button
                             size="icon"
                             variant="outline"
-                            onClick={() => updateQuantity(item.id, 1)}
+                            onClick={() => updateQuantity(itemIndex, 1)}
                             className="h-8 w-8 md:h-10 md:w-10"
                           >
                             <Plus className="h-3 w-3 md:h-4 md:w-4" />
@@ -176,7 +181,7 @@ export default function Cart() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => removeItem(itemIndex)}
                           className="ml-auto text-destructive hover:text-destructive h-8 w-8 md:h-10 md:w-10"
                         >
                           <Trash2 className="h-4 w-4" />
