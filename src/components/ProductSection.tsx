@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 interface ProductSectionProps {
   title: string;
   products: any[];
-  onAddToCart: (product: any) => void;
+  onAddToCart: (product: any, selectedVariants?: Record<string, string>) => void;
   bgColor?: string;
   badge?: {
     text: string;
@@ -55,7 +55,7 @@ export const ProductSection = ({
               description={product.description}
               price={product.price}
               imageUrl={product.image_url}
-              onAddToCart={() => onAddToCart(product)}
+              onAddToCart={(variants) => onAddToCart(product, variants)}
             />
           ))}
         </div>

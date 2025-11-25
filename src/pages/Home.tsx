@@ -60,18 +60,28 @@ export default function Home() {
       setCart(JSON.parse(savedCart));
     }
   };
-  const addToCart = (product: any) => {
-    const existingItem = cart.find(item => item.id === product.id);
+  const addToCart = (product: any, selectedVariants?: Record<string, string>) => {
+    const existingItem = cart.find(item => 
+      item.id === product.id && 
+      JSON.stringify(item.selectedVariants) === JSON.stringify(selectedVariants || {})
+    );
+    
     let newCart;
     if (existingItem) {
-      newCart = cart.map(item => item.id === product.id ? {
-        ...item,
-        quantity: item.quantity + 1
-      } : item);
+      newCart = cart.map(item => 
+        item.id === product.id && 
+        JSON.stringify(item.selectedVariants) === JSON.stringify(selectedVariants || {})
+          ? {
+            ...item,
+            quantity: item.quantity + 1
+          } 
+          : item
+      );
     } else {
       newCart = [...cart, {
         ...product,
-        quantity: 1
+        quantity: 1,
+        selectedVariants: selectedVariants || {}
       }];
     }
     setCart(newCart);
@@ -125,16 +135,28 @@ export default function Home() {
         </section>}
 
       {/* Lançamentos */}
-      <ProductSection title="Lançamentos" products={newProducts} onAddToCart={addToCart} bgColor="bg-secondary/30" badge={{
-      text: "NOVO",
-      color: "bg-accent text-accent-foreground"
-    }} />
+      <ProductSection 
+        title="Lançamentos" 
+        products={newProducts} 
+        onAddToCart={(product, variants) => addToCart(product, variants)} 
+        bgColor="bg-secondary/30" 
+        badge={{
+          text: "NOVO",
+          color: "bg-accent text-accent-foreground"
+        }} 
+      />
 
       {/* Promoções */}
-      <ProductSection title="Promoções" products={promoProducts} onAddToCart={addToCart} bgColor="bg-background" badge={{
-      text: "OFERTA",
-      color: "bg-destructive text-destructive-foreground"
-    }} />
+      <ProductSection 
+        title="Promoções" 
+        products={promoProducts} 
+        onAddToCart={(product, variants) => addToCart(product, variants)} 
+        bgColor="bg-background" 
+        badge={{
+          text: "OFERTA",
+          color: "bg-destructive text-destructive-foreground"
+        }} 
+      />
 
       {/* Featured Products */}
       <section className="py-8 md:py-16 px-4 bg-secondary/30">
@@ -146,7 +168,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {products.map(product => <ProductCard key={product.id} id={product.id} name={product.name} description={product.description} price={product.price} imageUrl={product.image_url} onAddToCart={() => addToCart(product)} />)}
+            {products.map(product => <ProductCard key={product.id} id={product.id} name={product.name} description={product.description} price={product.price} imageUrl={product.image_url} onAddToCart={(variants) => addToCart(product, variants)} />)}
           </div>
         </div>
       </section>

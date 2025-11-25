@@ -53,16 +53,22 @@ export default function Products() {
     if (savedCart) setCart(JSON.parse(savedCart));
   };
 
-  const addToCart = (product: any) => {
-    const existingItem = cart.find((item) => item.id === product.id);
+  const addToCart = (product: any, selectedVariants?: Record<string, string>) => {
+    const existingItem = cart.find((item) => 
+      item.id === product.id && 
+      JSON.stringify(item.selectedVariants) === JSON.stringify(selectedVariants || {})
+    );
     let newCart;
 
     if (existingItem) {
       newCart = cart.map((item) =>
-        item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        item.id === product.id && 
+        JSON.stringify(item.selectedVariants) === JSON.stringify(selectedVariants || {})
+          ? { ...item, quantity: item.quantity + 1 } 
+          : item
       );
     } else {
-      newCart = [...cart, { ...product, quantity: 1 }];
+      newCart = [...cart, { ...product, quantity: 1, selectedVariants: selectedVariants || {} }];
     }
 
     setCart(newCart);
@@ -113,7 +119,7 @@ export default function Products() {
               description={product.description}
               price={product.price}
               imageUrl={product.image_url}
-              onAddToCart={() => addToCart(product)}
+              onAddToCart={(variants) => addToCart(product, variants)}
             />
           ))}
         </div>
