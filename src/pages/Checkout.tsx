@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -13,8 +14,11 @@ import { z } from "zod";
 const profileSchema = z.object({
   email: z.string().email("Email inválido"),
   empresa: z.string().optional(),
-  contato: z.string().optional(),
-  telefone: z.string().optional(),
+  contato: z.string().min(1, "Nome do contato é obrigatório"),
+  telefone: z.string().min(1, "Telefone é obrigatório"),
+  preferencia_contato: z.enum(["telefone", "whatsapp", "email"], {
+    errorMap: () => ({ message: "Selecione como prefere ser atendido" }),
+  }),
   cpf_cnpj: z.string().optional(),
   cep: z.string().optional(),
   cidade: z.string().optional(),
@@ -32,6 +36,7 @@ export default function Checkout() {
     contato: "",
     email: "",
     telefone: "",
+    preferencia_contato: "",
     cpf_cnpj: "",
     cep: "",
     cidade: "",
@@ -66,6 +71,13 @@ export default function Checkout() {
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
     }));
   };
 
@@ -234,12 +246,13 @@ export default function Checkout() {
                   </div>
 
                   <div>
-                    <Label htmlFor="contato">Nome do Contato</Label>
+                    <Label htmlFor="contato">Nome do Contato *</Label>
                     <Input
                       id="contato"
                       name="contato"
                       value={formData.contato}
                       onChange={handleChange}
+                      required
                     />
                   </div>
 
@@ -256,15 +269,34 @@ export default function Checkout() {
                     />
                   </div>
 
-                  <div className="md:col-span-2">
-                    <Label htmlFor="telefone">Telefone</Label>
+                  <div>
+                    <Label htmlFor="telefone">Telefone *</Label>
                     <Input
                       id="telefone"
                       name="telefone"
                       value={formData.telefone}
                       onChange={handleChange}
                       placeholder="(00) 00000-0000"
+                      required
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="preferencia_contato">Como prefere ser atendido? *</Label>
+                    <Select
+                      value={formData.preferencia_contato}
+                      onValueChange={(value) => handleSelectChange("preferencia_contato", value)}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma opção" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="telefone">Telefone</SelectItem>
+                        <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="md:col-span-2">
