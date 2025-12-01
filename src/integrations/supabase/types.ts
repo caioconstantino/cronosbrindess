@@ -338,32 +338,44 @@ export type Database = {
       products: {
         Row: {
           active: boolean | null
+          altura: number | null
           category_id: string | null
+          comprimento: number | null
           created_at: string
           description: string | null
           id: string
           image_url: string | null
+          largura: number | null
           name: string
+          ncm: string | null
           updated_at: string
         }
         Insert: {
           active?: boolean | null
+          altura?: number | null
           category_id?: string | null
+          comprimento?: number | null
           created_at?: string
           description?: string | null
           id?: string
           image_url?: string | null
+          largura?: number | null
           name: string
+          ncm?: string | null
           updated_at?: string
         }
         Update: {
           active?: boolean | null
+          altura?: number | null
           category_id?: string | null
+          comprimento?: number | null
           created_at?: string
           description?: string | null
           id?: string
           image_url?: string | null
+          largura?: number | null
           name?: string
+          ncm?: string | null
           updated_at?: string
         }
         Relationships: [
