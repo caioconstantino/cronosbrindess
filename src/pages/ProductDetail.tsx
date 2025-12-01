@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, ChevronLeft } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// Variant selection removed from product detail view; admin will select variants on order edit.
 import { Badge } from "@/components/ui/badge";
 
 interface ProductImage {
@@ -41,15 +41,12 @@ export default function ProductDetail() {
   const { toast } = useToast();
   const [product, setProduct] = useState<Product | null>(null);
   const [images, setImages] = useState<ProductImage[]>([]);
-  const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [cart, setCart] = useState<any[]>([]);
 
   useEffect(() => {
     loadProduct();
     loadImages();
-    loadVariants();
     loadCart();
   }, [id]);
 
@@ -73,21 +70,7 @@ export default function ProductDetail() {
     if (data) setImages(data);
   };
 
-  const loadVariants = async () => {
-    const { data } = await supabase
-      .from("product_variants")
-      .select("*")
-      .eq("product_id", id);
-    
-    if (data) {
-      const typedVariants = data.map(v => ({
-        id: v.id,
-        name: v.name,
-        options: Array.isArray(v.options) ? v.options as string[] : []
-      }));
-      setVariants(typedVariants);
-    }
-  };
+  // Variants are not loaded on product detail page; admin will select variants in order edit.
 
   const loadCart = () => {
     const savedCart = localStorage.getItem("cart");
@@ -97,26 +80,17 @@ export default function ProductDetail() {
   const addToCart = () => {
     if (!product) return;
 
-    const allVariantsSelected = variants.every(v => selectedVariants[v.id]);
-    
-    if (variants.length > 0 && !allVariantsSelected) {
-      toast({
-        title: "Selecione todas as opções",
-        description: "Por favor, selecione todas as variações do produto.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // No variant selection required on the product detail page; admin will choose variants later.
 
     const cartItem = {
       ...product,
       quantity: 1,
-      selectedVariants: selectedVariants,
+      selectedVariants: {},
     };
 
     const existingItemIndex = cart.findIndex(
       item => item.id === product.id && 
-      JSON.stringify(item.selectedVariants) === JSON.stringify(selectedVariants)
+      JSON.stringify(item.selectedVariants) === JSON.stringify({})
     );
 
     let newCart;
@@ -240,34 +214,7 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {/* Variantes */}
-            {variants.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Opções:</h3>
-                {variants.map((variant) => (
-                  <div key={variant.id} className="space-y-2">
-                    <label className="text-sm font-medium">{variant.name}</label>
-                    <Select
-                      value={selectedVariants[variant.id] || ""}
-                      onValueChange={(value) =>
-                        setSelectedVariants({ ...selectedVariants, [variant.id]: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={`Selecione ${variant.name}`} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {variant.options.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Variant selection removed from product detail; admin will choose variants on order edit. */}
 
             <Button
               onClick={addToCart}
