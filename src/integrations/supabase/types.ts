@@ -230,6 +230,7 @@ export type Database = {
           notes: string | null
           order_number: string | null
           payment_terms: string | null
+          shipping_cost: number | null
           status: string | null
           total: number | null
           updated_at: string
@@ -245,6 +246,7 @@ export type Database = {
           notes?: string | null
           order_number?: string | null
           payment_terms?: string | null
+          shipping_cost?: number | null
           status?: string | null
           total?: number | null
           updated_at?: string
@@ -260,6 +262,7 @@ export type Database = {
           notes?: string | null
           order_number?: string | null
           payment_terms?: string | null
+          shipping_cost?: number | null
           status?: string | null
           total?: number | null
           updated_at?: string
@@ -341,7 +344,6 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
-          price: number | null
           updated_at: string
         }
         Insert: {
@@ -352,7 +354,6 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
-          price?: number | null
           updated_at?: string
         }
         Update: {
@@ -363,7 +364,6 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
-          price?: number | null
           updated_at?: string
         }
         Relationships: [

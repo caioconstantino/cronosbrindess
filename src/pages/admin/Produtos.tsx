@@ -20,7 +20,6 @@ type Product = {
   id: string;
   name: string;
   description: string | null;
-  price: number | null;
   image_url: string | null;
   category_id: string | null;
   active: boolean | null;
@@ -51,7 +50,6 @@ export default function ProdutosNew() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    price: "",
     image_url: "",
     category_id: "",
     active: true,
@@ -120,7 +118,6 @@ export default function ProdutosNew() {
     const productData = {
       name: formData.name,
       description: formData.description || null,
-      price: formData.price ? parseFloat(formData.price) : null,
       image_url: formData.image_url || null,
       category_id: formData.category_id || null,
       active: formData.active,
@@ -209,7 +206,6 @@ export default function ProdutosNew() {
     setFormData({
       name: "",
       description: "",
-      price: "",
       image_url: "",
       category_id: "",
       active: true,
@@ -226,7 +222,6 @@ export default function ProdutosNew() {
     setFormData({
       name: product.name,
       description: product.description || "",
-      price: product.price?.toString() || "",
       image_url: product.image_url || "",
       category_id: product.category_id || "",
       active: product.active ?? true,
@@ -297,17 +292,6 @@ export default function ProdutosNew() {
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       rows={4}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="price">Preço</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                     />
                   </div>
 
@@ -468,9 +452,6 @@ export default function ProdutosNew() {
             </CardHeader>
             <CardContent>
               <div className="flex gap-4 text-sm">
-                {product.price && (
-                  <span className="font-bold text-accent">R$ {product.price.toFixed(2)}</span>
-                )}
                 <span>Status: {product.active ? "Ativo" : "Inativo"}</span>
               </div>
             </CardContent>

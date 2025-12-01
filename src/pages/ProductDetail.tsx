@@ -24,7 +24,6 @@ interface Product {
   id: string;
   name: string;
   description: string;
-  price: number;
   image_url: string;
   category_id: string;
   categories?: {
@@ -220,12 +219,6 @@ export default function ProductDetail() {
                 {product.description}
               </p>
             )}
-
-            <div className="py-4 border-y border-border">
-              <p className="text-3xl font-bold text-accent">
-                R$ {product.price?.toFixed(2)}
-              </p>
-            </div>
 
             {/* Variantes */}
             {variants.length > 0 && (

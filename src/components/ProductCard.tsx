@@ -10,7 +10,6 @@ interface ProductCardProps {
   id: string;
   name: string;
   description?: string;
-  price?: number;
   imageUrl?: string;
   onAddToCart: (selectedVariants?: Record<string, string>) => void;
 }
@@ -19,7 +18,6 @@ export const ProductCard = ({
   id,
   name,
   description,
-  price,
   imageUrl,
   onAddToCart,
 }: ProductCardProps) => {
@@ -99,14 +97,6 @@ export const ProductCard = ({
           <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 mb-3">
             {description}
           </p>
-        )}
-        {price && (
-          <div className="flex items-baseline gap-1">
-            <span className="text-sm text-muted-foreground">R$</span>
-            <p className="text-xl md:text-2xl font-bold text-accent">
-              {price.toFixed(2)}
-            </p>
-          </div>
         )}
       </CardContent>
       <CardFooter className="p-4 md:p-5 pt-0 flex gap-2">

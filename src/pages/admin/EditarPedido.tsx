@@ -42,6 +42,7 @@ type Order = {
   delivery_terms: string | null;
   validity_terms: string | null;
   contact_preference: string | null;
+  shipping_cost?: number | null;
   profiles: {
     empresa: string | null;
     contato: string | null;
@@ -65,7 +66,6 @@ type Product = {
   id: string;
   name: string;
   image_url: string | null;
-  price: number | null;
 };
 
 export default function EditarPedido() {
@@ -119,7 +119,7 @@ export default function EditarPedido() {
   const loadProducts = async () => {
     const { data, error } = await supabase
       .from("products")
-      .select("id, name, image_url, price")
+      .select("id, name, image_url")
       .eq("active", true)
       .order("name");
     
@@ -277,7 +277,7 @@ export default function EditarPedido() {
         order_id: id,
         product_id: selectedProduct.id,
         quantity: newItemQuantity,
-        price: selectedProduct.price || 0,
+        price: 0,
       })
       .select(`
         id,
@@ -380,7 +380,8 @@ export default function EditarPedido() {
         total,
         payment_terms: order.payment_terms,
         delivery_terms: order.delivery_terms,
-        validity_terms: order.validity_terms
+        validity_terms: order.validity_terms,
+        shipping_cost: order.shipping_cost || 0
       })
       .eq("id", id);
 
@@ -606,8 +607,23 @@ export default function EditarPedido() {
     y += 8;
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(12);
-    pdf.text("TOTAL GERAL:", pageWidth - margin - 60, y, { align: "right" });
+    
+    // Subtotal
+    pdf.text("SUBTOTAL:", pageWidth - margin - 60, y, { align: "right" });
     pdf.text(`R$ ${calculateTotal().toFixed(2)}`, pageWidth - margin, y, { align: "right" });
+    
+    // Shipping if exists
+    if (order.shipping_cost && order.shipping_cost > 0) {
+      y += 7;
+      pdf.text("FRETE:", pageWidth - margin - 60, y, { align: "right" });
+      pdf.text(`R$ ${order.shipping_cost.toFixed(2)}`, pageWidth - margin, y, { align: "right" });
+    }
+    
+    // Total with shipping
+    y += 7;
+    const totalWithShipping = calculateTotal() + (order.shipping_cost || 0);
+    pdf.text("TOTAL GERAL:", pageWidth - margin - 60, y, { align: "right" });
+    pdf.text(`R$ ${totalWithShipping.toFixed(2)}`, pageWidth - margin, y, { align: "right" });
 
     // Additional terms
     y += 15;
@@ -1047,6 +1063,16 @@ export default function EditarPedido() {
               placeholder="10 DIAS - SUJEITO A CONFIRMAÇÃO DE ESTOQUE NO ATO DA FORMALIZAÇÃO DA COMPRA."
             />
           </div>
+          <div>
+            <label className="text-sm font-medium block mb-2">Frete (R$)</label>
+            <Input
+              type="number"
+              step="0.01"
+              value={order.shipping_cost || 0}
+              onChange={(e) => setOrder({ ...order, shipping_cost: parseFloat(e.target.value) || 0 })}
+              placeholder="0.00"
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -1162,11 +1188,6 @@ export default function EditarPedido() {
                           )}
                           <div className="flex-1">
                             <p className="font-medium">{product.name}</p>
-                            {product.price && (
-                              <p className="text-sm text-muted-foreground">
-                                R$ {product.price.toFixed(2)}
-                              </p>
-                            )}
                           </div>
                         </button>
                       ))}
@@ -1202,12 +1223,24 @@ export default function EditarPedido() {
             </div>
           </div>
 
-          <div className="mt-6 pt-6 border-t flex justify-end">
-            <div className="text-right">
-              <p className="text-muted-foreground mb-2">Total Geral</p>
-              <p className="text-3xl font-bold text-primary">
-                R$ {calculateTotal().toFixed(2)}
-              </p>
+          <div className="mt-6 pt-6 border-t">
+            <div className="space-y-2">
+              <div className="flex justify-between text-lg">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-semibold">R$ {calculateTotal().toFixed(2)}</span>
+              </div>
+              {order.shipping_cost && order.shipping_cost > 0 && (
+                <div className="flex justify-between text-lg">
+                  <span className="text-muted-foreground">Frete</span>
+                  <span className="font-semibold">R$ {order.shipping_cost.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-2xl border-t pt-2">
+                <span className="font-bold">Total Geral</span>
+                <span className="font-bold text-primary">
+                  R$ {(calculateTotal() + (order.shipping_cost || 0)).toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
         </CardContent>

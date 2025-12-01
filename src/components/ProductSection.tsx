@@ -53,7 +53,6 @@ export const ProductSection = ({
               id={product.id}
               name={product.name}
               description={product.description}
-              price={product.price}
               imageUrl={product.image_url}
               onAddToCart={(variants) => onAddToCart(product, variants)}
             />
