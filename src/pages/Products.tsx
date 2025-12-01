@@ -117,7 +117,6 @@ export default function Products() {
               id={product.id}
               name={product.name}
               description={product.description}
-              price={product.price}
               imageUrl={product.image_url}
               onAddToCart={(variants) => addToCart(product, variants)}
             />

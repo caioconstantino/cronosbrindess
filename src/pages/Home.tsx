@@ -168,7 +168,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {products.map(product => <ProductCard key={product.id} id={product.id} name={product.name} description={product.description} price={product.price} imageUrl={product.image_url} onAddToCart={(variants) => addToCart(product, variants)} />)}
+            {products.map(product => <ProductCard key={product.id} id={product.id} name={product.name} description={product.description} imageUrl={product.image_url} onAddToCart={(variants) => addToCart(product, variants)} />)}
           </div>
         </div>
       </section>
