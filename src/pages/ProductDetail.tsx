@@ -26,6 +26,10 @@ interface Product {
   description: string;
   image_url: string;
   category_id: string;
+  ncm: string | null;
+  altura: number | null;
+  largura: number | null;
+  comprimento: number | null;
   categories?: {
     name: string;
   };
@@ -218,6 +222,27 @@ export default function ProductDetail() {
               <p className="text-lg text-muted-foreground whitespace-pre-line">
                 {product.description}
               </p>
+            )}
+
+            {/* Especificações Técnicas */}
+            {(product.ncm || product.altura || product.largura || product.comprimento) && (
+              <div className="border border-border rounded-lg p-4 space-y-2 bg-muted/50">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Especificações Técnicas</h3>
+                {product.ncm && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">NCM:</span>
+                    <span className="font-medium">{product.ncm}</span>
+                  </div>
+                )}
+                {(product.altura || product.largura || product.comprimento) && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Dimensões (A x L x C):</span>
+                    <span className="font-medium">
+                      {product.altura || '—'} x {product.largura || '—'} x {product.comprimento || '—'} cm
+                    </span>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Variantes */}

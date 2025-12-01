@@ -23,6 +23,10 @@ type Product = {
   image_url: string | null;
   category_id: string | null;
   active: boolean | null;
+  ncm: string | null;
+  altura: number | null;
+  largura: number | null;
+  comprimento: number | null;
 };
 
 type Category = {
@@ -53,6 +57,10 @@ export default function ProdutosNew() {
     image_url: "",
     category_id: "",
     active: true,
+    ncm: "",
+    altura: "",
+    largura: "",
+    comprimento: "",
   });
   const [additionalImages, setAdditionalImages] = useState<string[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
@@ -121,6 +129,10 @@ export default function ProdutosNew() {
       image_url: formData.image_url || null,
       category_id: formData.category_id || null,
       active: formData.active,
+      ncm: formData.ncm || null,
+      altura: formData.altura ? parseFloat(formData.altura) : null,
+      largura: formData.largura ? parseFloat(formData.largura) : null,
+      comprimento: formData.comprimento ? parseFloat(formData.comprimento) : null,
     };
 
     let productId: string;
@@ -209,6 +221,10 @@ export default function ProdutosNew() {
       image_url: "",
       category_id: "",
       active: true,
+      ncm: "",
+      altura: "",
+      largura: "",
+      comprimento: "",
     });
     setAdditionalImages([]);
     setVariants([]);
@@ -225,6 +241,10 @@ export default function ProdutosNew() {
       image_url: product.image_url || "",
       category_id: product.category_id || "",
       active: product.active ?? true,
+      ncm: product.ncm || "",
+      altura: product.altura?.toString() || "",
+      largura: product.largura?.toString() || "",
+      comprimento: product.comprimento?.toString() || "",
     });
 
     const images = await loadProductImages(product.id);
@@ -319,6 +339,52 @@ export default function ProdutosNew() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="ncm">NCM</Label>
+                    <Input
+                      id="ncm"
+                      value={formData.ncm}
+                      onChange={(e) => setFormData({ ...formData, ncm: e.target.value })}
+                      placeholder="Nomenclatura Comum do Mercosul"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="altura">Altura (cm)</Label>
+                      <Input
+                        id="altura"
+                        type="number"
+                        step="0.01"
+                        value={formData.altura}
+                        onChange={(e) => setFormData({ ...formData, altura: e.target.value })}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="largura">Largura (cm)</Label>
+                      <Input
+                        id="largura"
+                        type="number"
+                        step="0.01"
+                        value={formData.largura}
+                        onChange={(e) => setFormData({ ...formData, largura: e.target.value })}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="comprimento">Comprimento (cm)</Label>
+                      <Input
+                        id="comprimento"
+                        type="number"
+                        step="0.01"
+                        value={formData.comprimento}
+                        onChange={(e) => setFormData({ ...formData, comprimento: e.target.value })}
+                        placeholder="0.00"
+                      />
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2">

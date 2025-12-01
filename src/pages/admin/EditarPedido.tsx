@@ -521,12 +521,38 @@ export default function EditarPedido() {
 
     // Salesperson info - below client data
     if (order.salesperson) {
-      const vendedorNome = order.salesperson.contato || order.salesperson.email || 'N/A';
+      const vendedorNome = order.salesperson.contato || 'N/A';
+      const vendedorEmail = order.salesperson.email || '';
+      
+      // Buscar telefone do vendedor via profiles
+      let vendedorTelefone = '';
+      if (order.user_id) {
+        const { data: vendedorProfile } = await supabase
+          .from("profiles")
+          .select("telefone")
+          .eq("id", order.user_id)
+          .maybeSingle();
+        
+        if (vendedorProfile?.telefone) {
+          vendedorTelefone = vendedorProfile.telefone;
+        }
+      }
+      
       y += 2;
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "bold");
       pdf.text(`Vendedor: ${vendedorNome}`, margin, y);
       y += 5;
+      
+      pdf.setFont("helvetica", "normal");
+      if (vendedorEmail) {
+        pdf.text(`E-mail: ${vendedorEmail}`, margin, y);
+        y += 5;
+      }
+      if (vendedorTelefone) {
+        pdf.text(`Telefone: ${vendedorTelefone}`, margin, y);
+        y += 5;
+      }
     }
 
     y += 5;
