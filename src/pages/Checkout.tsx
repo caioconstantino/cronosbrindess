@@ -90,6 +90,7 @@ export default function Checkout() {
         contato: formData.contato,
         email: formData.email,
         telefone: formData.telefone,
+        preferencia_contato: formData.preferencia_contato,
         cpf_cnpj: formData.cpf_cnpj,
         cep: formData.cep,
         cidade: formData.cidade,
