@@ -13,6 +13,7 @@ import logoImage from "@/assets/logo-cronos.png";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRef } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
 
@@ -79,6 +80,7 @@ export default function EditarPedido() {
   const [pdfGenerated, setPdfGenerated] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [variants, setVariants] = useState<Record<string, { id: string; name: string; options: string[] }[]>>({});
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productSearch, setProductSearch] = useState("");
   const [showProductSuggestions, setShowProductSuggestions] = useState(false);
@@ -213,6 +215,11 @@ export default function EditarPedido() {
       toast.error("Erro ao carregar itens do pedido");
     } else if (itemsData) {
     setItems(itemsData as any);
+      // Load variants for each product in the order items
+      const uniqueProductIds = Array.from(new Set((itemsData || []).map((i: any) => i.product_id).filter(Boolean)));
+      for (const pid of uniqueProductIds) {
+        await loadVariants(pid);
+      }
     }
 
     // Check if PDF already exists in bucket
@@ -233,6 +240,23 @@ export default function EditarPedido() {
     setLoading(false);
   };
 
+  const loadVariants = async (productId: string) => {
+    if (!productId || variants[productId]) return;
+
+    const { data, error } = await supabase
+      .from("product_variants")
+      .select("id, name, options")
+      .eq("product_id", productId);
+
+    if (error) {
+      console.error("Erro ao carregar variantes:", error);
+      return;
+    }
+
+    const formatted = (data || []).map((v: any) => ({ id: v.id, name: v.name, options: Array.isArray(v.options) ? v.options as string[] : [] }));
+    setVariants(prev => ({ ...prev, [productId]: formatted }));
+  };
+
   const updateItemPrice = (itemId: string, newPrice: string) => {
     const price = parseFloat(newPrice) || 0;
     setItems(items.map(item => 
@@ -246,6 +270,15 @@ export default function EditarPedido() {
     setItems(items.map(item => 
       item.id === itemId ? { ...item, quantity } : item
     ));
+  };
+
+  const updateSelectedVariant = (itemId: string, variantName: string, value: string) => {
+    setItems(items.map(item => {
+      if (item.id !== itemId) return item;
+      const current = item.selected_variants || {};
+      const updated = { ...current, [variantName]: value };
+      return { ...item, selected_variants: updated };
+    }));
   };
 
   const removeItem = async (itemId: string) => {
@@ -278,6 +311,7 @@ export default function EditarPedido() {
         product_id: selectedProduct.id,
         quantity: newItemQuantity,
         price: 0,
+        selected_variants: {},
       })
       .select(`
         id,
@@ -303,6 +337,8 @@ export default function EditarPedido() {
       setSelectedProduct(null);
       setProductSearch("");
       setNewItemQuantity(1);
+      // Load variants for this product so admin can adjust after adding
+      if (data.product_id) await loadVariants(data.product_id);
       toast.success("Item adicionado com sucesso");
     }
   };
@@ -396,7 +432,8 @@ export default function EditarPedido() {
         .from("order_items")
         .update({ 
           price: item.price,
-          quantity: item.quantity 
+          quantity: item.quantity,
+          selected_variants: item.selected_variants || {}
         })
         .eq("id", item.id);
 
@@ -1126,12 +1163,37 @@ export default function EditarPedido() {
                     {item.custom_name && (
                       <span className="text-xs text-muted-foreground">Item Customizado</span>
                     )}
-                    {item.selected_variants && Object.keys(item.selected_variants).length > 0 && (
+                    {(!item.product_id || !variants[item.product_id] || variants[item.product_id].length === 0) && item.selected_variants && Object.keys(item.selected_variants).length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {Object.entries(item.selected_variants).map(([key, value]) => (
                           <span key={key} className="text-xs px-2 py-0.5 bg-muted rounded">
                             {value}
                           </span>
+                        ))}
+                      </div>
+                    )}
+                    {/* Show selectors for variants available for this product and allow admin to change */}
+                    {item.product_id && variants[item.product_id] && variants[item.product_id].length > 0 && (
+                      <div className="space-y-2 mt-2">
+                        {variants[item.product_id].map((variant) => (
+                          <div key={variant.id} className="space-y-2">
+                            <Label className="text-sm">{variant.name}</Label>
+                            <Select
+                              value={(item.selected_variants && item.selected_variants[variant.name]) || ""}
+                              onValueChange={(value) => updateSelectedVariant(item.id, variant.name, value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={`Selecione ${variant.name}`} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(variant.options as string[]).map((option) => (
+                                  <SelectItem key={option} value={option}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         ))}
                       </div>
                     )}
