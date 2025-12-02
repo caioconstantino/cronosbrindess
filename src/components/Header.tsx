@@ -91,15 +91,15 @@ export const Header = ({
   return <header className="border-b bg-background shadow-elegant sticky top-0 z-50 backdrop-blur-sm bg-background/95">
       {/* Top Bar - Hidden on mobile */}
       <div className="bg-gradient-hero text-primary-foreground hidden md:block">
-        <div className="container mx-auto px-4 py-2.5">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-6">
-              <a href="tel:+5511937260395" className="flex items-center gap-2 hover:text-accent transition-colors">
-                <Phone className="h-4 w-4" />
+        <div className="container mx-auto px-4 py-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-4">
+              <a href="tel:+5511937260395" className="flex items-center gap-1.5 hover:text-accent transition-colors">
+                <Phone className="h-3.5 w-3.5" />
                 <span className="font-medium">11 93726-0395</span>
               </a>
-              <a href="mailto:comercial@cronosbrindes.com.br" className="flex items-center gap-2 hover:text-accent transition-colors">
-                <Mail className="h-4 w-4" />
+              <a href="mailto:comercial@cronosbrindes.com.br" className="flex items-center gap-1.5 hover:text-accent transition-colors">
+                <Mail className="h-3.5 w-3.5" />
                 <span className="font-medium">comercial@cronosbrindes.com.br</span>
               </a>
             </div>
@@ -109,8 +109,8 @@ export const Header = ({
 
       {/* Main Header */}
       <div className="bg-background border-b border-border/50">
-        <div className="container mx-auto px-4 py-3 md:py-5">
-          <div className="flex items-center justify-between gap-2 md:gap-8">
+        <div className="container mx-auto px-4 py-2 md:py-3">
+          <div className="flex items-center justify-between gap-2 md:gap-6">
             {/* Mobile Menu Button */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild className="md:hidden">
@@ -157,15 +157,15 @@ export const Header = ({
             </Sheet>
 
             <Link to="/" className="flex-shrink-0 hover:opacity-80 transition-opacity">
-              <img src={logoCronos} alt="Cronos Brindes & Camisetas" className="h-12 md:h-20 w-auto object-contain" />
+              <img src={logoCronos} alt="Cronos Brindes & Camisetas" className="h-10 md:h-14 w-auto object-contain" />
             </Link>
 
             {/* Desktop Search */}
             <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl relative" ref={searchRef}>
               <div className="relative group w-full">
-                <Input type="text" placeholder="Digite o brinde que você procura..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onFocus={() => searchQuery.length >= 2 && setShowSuggestions(true)} className="w-full pr-12 h-12 bg-muted border-transparent focus:border-primary transition-all rounded-xl shadow-sm" />
-                <Button type="submit" size="icon" className="absolute right-1 top-1 h-10 w-10 bg-gradient-hero hover:opacity-90 transition-all rounded-lg shadow-md">
-                  <Search className="h-4 w-4" />
+                <Input type="text" placeholder="Digite o brinde que você procura..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onFocus={() => searchQuery.length >= 2 && setShowSuggestions(true)} className="w-full pr-12 h-10 bg-muted border-transparent focus:border-primary transition-all rounded-lg shadow-sm text-sm" />
+                <Button type="submit" size="icon" className="absolute right-1 top-1 h-8 w-8 bg-gradient-hero hover:opacity-90 transition-all rounded-md shadow-md">
+                  <Search className="h-3.5 w-3.5" />
                 </Button>
               </div>
 
@@ -204,12 +204,12 @@ export const Header = ({
       {/* Categories Bar - Hidden on mobile */}
       <div className="bg-muted/50 border-b border-border/30 hidden md:block">
         <div className="container mx-auto px-4">
-          <div className="flex items-center gap-1 overflow-x-auto py-3 scrollbar-hide">
+          <div className="flex items-center gap-1 overflow-x-auto py-2 scrollbar-hide">
             <DropdownMenu open={openDropdown === 'all'} onOpenChange={open => setOpenDropdown(open ? 'all' : null)}>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" onMouseEnter={() => setOpenDropdown('all')} onMouseLeave={() => setOpenDropdown(null)} className="gap-2 font-semibold  rounded-xl transition-all h-10">
+                <Button variant="ghost" onMouseEnter={() => setOpenDropdown('all')} onMouseLeave={() => setOpenDropdown(null)} className="gap-1.5 font-semibold text-xs rounded-lg transition-all h-8 px-3">
                   TODAS AS CATEGORIAS
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-72 bg-popover z-[100] shadow-elegant rounded-xl border-border/50 max-h-[70vh] overflow-y-auto" onMouseEnter={() => setOpenDropdown('all')} onMouseLeave={() => setOpenDropdown(null)}>
@@ -226,9 +226,9 @@ export const Header = ({
             if (subcategories.length > 0) {
               return <DropdownMenu key={category.id} open={openDropdown === category.id} onOpenChange={open => setOpenDropdown(open ? category.id : null)}>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="px-4 py-2 h-10 text-sm font-semibold hover:bg-background/80 rounded-xl transition-all whitespace-nowrap gap-1.5" onMouseEnter={() => setOpenDropdown(category.id)} onMouseLeave={() => setOpenDropdown(null)}>
+                      <Button variant="ghost" className="px-3 py-1.5 h-8 text-xs font-semibold hover:bg-background/80 rounded-lg transition-all whitespace-nowrap gap-1" onMouseEnter={() => setOpenDropdown(category.id)} onMouseLeave={() => setOpenDropdown(null)}>
                         {category.name.toUpperCase()}
-                        <ChevronDown className="h-3.5 w-3.5" />
+                        <ChevronDown className="h-3 w-3" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="bg-popover z-[100] shadow-elegant rounded-xl border-border/50 w-56" onMouseEnter={() => setOpenDropdown(category.id)} onMouseLeave={() => setOpenDropdown(null)}>
@@ -245,7 +245,7 @@ export const Header = ({
                     </DropdownMenuContent>
                   </DropdownMenu>;
             }
-            return <Link key={category.id} to={`/produtos?categoria=${category.id}`} className="px-4 py-2 h-10 flex items-center text-sm font-semibold hover:bg-background/80 rounded-xl transition-all whitespace-nowrap">
+            return <Link key={category.id} to={`/produtos?categoria=${category.id}`} className="px-3 py-1.5 h-8 flex items-center text-xs font-semibold hover:bg-background/80 rounded-lg transition-all whitespace-nowrap">
                   {category.name.toUpperCase()}
                 </Link>;
           })}
