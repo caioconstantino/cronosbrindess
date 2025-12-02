@@ -142,15 +142,15 @@ export default function ProductDetail() {
           Voltar
         </Button>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
           {/* Galeria de Imagens */}
           <div className="space-y-4">
-            <div className="aspect-square overflow-hidden rounded-lg bg-muted shadow-elegant">
+            <div className="w-full max-h-[400px] md:max-h-[500px] overflow-hidden rounded-lg bg-muted shadow-elegant flex items-center justify-center">
               {allImages.length > 0 ? (
                 <img
                   src={allImages[selectedImage]?.image_url}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -160,7 +160,7 @@ export default function ProductDetail() {
             </div>
             
             {allImages.length > 1 && (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 gap-2">
                 {allImages.map((img, index) => (
                   <button
                     key={img.id}
