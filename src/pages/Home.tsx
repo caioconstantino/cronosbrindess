@@ -29,7 +29,7 @@ export default function Home() {
   const loadProducts = async () => {
     const {
       data
-    } = await supabase.from("products").select("*").eq("active", true).limit(4);
+    } = await supabase.from("products").select("*").eq("active", true).limit(12);
     if (data) setProducts(data);
   };
   const loadNewProducts = async () => {
@@ -37,7 +37,7 @@ export default function Home() {
       data
     } = await supabase.from("products").select("*").eq("active", true).order("created_at", {
       ascending: false
-    }).limit(4);
+    }).limit(12);
     if (data) setNewProducts(data);
   };
   const loadPromoProducts = async () => {
@@ -45,7 +45,7 @@ export default function Home() {
       data
     } = await supabase.from("products").select("*").eq("active", true).not("price", "is", null).order("price", {
       ascending: true
-    }).limit(4);
+    }).limit(12);
     if (data) setPromoProducts(data);
   };
   const loadCategories = async () => {
@@ -159,19 +159,12 @@ export default function Home() {
       />
 
       {/* Featured Products */}
-      <section className="py-8 md:py-16 px-4 bg-secondary/30">
-        <div className="container mx-auto">
-          <div className="flex justify-between items-center mb-6 md:mb-8">
-            <h2 className="text-xl md:text-3xl font-bold">Produtos em Destaque</h2>
-            <Link to="/produtos">
-              <Button variant="outline" className="border-2 hover:border-accent hover:text-accent font-semibold text-sm md:text-base">Ver Todos</Button>
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {products.map(product => <ProductCard key={product.id} id={product.id} name={product.name} description={product.description} imageUrl={product.image_url} onAddToCart={(variants) => addToCart(product, variants)} />)}
-          </div>
-        </div>
-      </section>
+      <ProductSection 
+        title="Produtos em Destaque" 
+        products={products} 
+        onAddToCart={(product, variants) => addToCart(product, variants)} 
+        bgColor="bg-secondary/30"
+      />
 
       {/* Feature Section */}
       <FeatureSection />
