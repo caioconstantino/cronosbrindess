@@ -5,8 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, ChevronLeft } from "lucide-react";
-// Variant selection removed from product detail view; admin will select variants on order edit.
 import { Badge } from "@/components/ui/badge";
+import { ImageZoom } from "@/components/ImageZoom";
 
 interface ProductImage {
   id: string;
@@ -147,10 +147,11 @@ export default function ProductDetail() {
           <div className="space-y-4">
             <div className="w-full max-h-[400px] md:max-h-[500px] overflow-hidden rounded-lg bg-muted shadow-elegant flex items-center justify-center">
               {allImages.length > 0 ? (
-                <img
+                <ImageZoom
                   src={allImages[selectedImage]?.image_url}
                   alt={product.name}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full"
+                  zoomLevel={2.5}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
