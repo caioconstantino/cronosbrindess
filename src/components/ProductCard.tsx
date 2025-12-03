@@ -1,10 +1,7 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { VariantSelectionDialog } from "./VariantSelectionDialog";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ProductCardProps {
   id: string;
@@ -22,47 +19,14 @@ export const ProductCard = ({
   onAddToCart,
 }: ProductCardProps) => {
   const navigate = useNavigate();
-  const [variantDialogOpen, setVariantDialogOpen] = useState(false);
-  const [hasVariants, setHasVariants] = useState(false);
-
-  useEffect(() => {
-    checkVariants();
-  }, [id]);
-
-  const checkVariants = async () => {
-    const { data } = await supabase
-      .from("product_variants")
-      .select("id")
-      .eq("product_id", id)
-      .limit(1);
-    
-    setHasVariants(data && data.length > 0);
-  };
 
   const handleAddToCart = () => {
-    if (hasVariants) {
-      setVariantDialogOpen(true);
-    } else {
-      onAddToCart();
-    }
-  };
-
-  const handleVariantsConfirm = (selectedVariants: Record<string, string>) => {
-    onAddToCart(selectedVariants);
+    // Add to cart without variant selection - admin will select variants on order edit
+    onAddToCart({});
   };
 
   return (
-    <>
-      <VariantSelectionDialog
-        open={variantDialogOpen}
-        onOpenChange={setVariantDialogOpen}
-        productId={id}
-        productName={name}
-        productImage={imageUrl}
-        onConfirm={handleVariantsConfirm}
-      />
-      
-      <Card className="overflow-hidden hover-lift group border-0 shadow-card bg-gradient-card">
+    <Card className="overflow-hidden hover-lift group border-0 shadow-card bg-gradient-card">
       <div 
         className="aspect-square overflow-hidden bg-muted cursor-pointer relative"
         onClick={() => navigate(`/produtos/${id}`)}
@@ -99,31 +63,19 @@ export const ProductCard = ({
           </p>
         )}
       </CardContent>
-      <CardFooter className="p-4 md:p-5 pt-0 flex gap-2">
-        <Button 
-          onClick={() => navigate(`/produtos/${id}`)} 
-          variant="outline" 
-          size="sm"
-          className="flex-1 text-xs md:text-sm border-2 hover:border-primary hover:text-primary transition-all"
-        >
-          <Eye className="mr-1 md:mr-2 h-3 md:h-4 w-3 md:w-4" />
-          <span className="hidden sm:inline">Detalhes</span>
-          <span className="sm:hidden">Ver</span>
-        </Button>
+      <CardFooter className="p-4 md:p-5 pt-0">
         <Button 
           onClick={(e) => {
             e.stopPropagation();
             handleAddToCart();
           }} 
           size="sm"
-          className="flex-1 bg-gradient-accent hover:shadow-glow text-xs md:text-sm font-semibold"
+          className="w-full bg-gradient-accent hover:shadow-glow text-xs md:text-sm font-semibold"
         >
-          <ShoppingCart className="mr-1 md:mr-2 h-3 md:h-4 w-3 md:w-4" />
-          <span className="hidden sm:inline">Orçamento</span>
-          <span className="sm:hidden">Pedir</span>
+          <ShoppingCart className="mr-2 h-4 w-4" />
+          Adicionar ao Orçamento
         </Button>
       </CardFooter>
     </Card>
-    </>
   );
 };

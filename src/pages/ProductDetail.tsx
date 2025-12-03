@@ -7,17 +7,12 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ImageZoom } from "@/components/ImageZoom";
+import { ProductCard } from "@/components/ProductCard";
 
 interface ProductImage {
   id: string;
   image_url: string;
   display_order: number;
-}
-
-interface ProductVariant {
-  id: string;
-  name: string;
-  options: string[];
 }
 
 interface Product {
@@ -43,12 +38,19 @@ export default function ProductDetail() {
   const [images, setImages] = useState<ProductImage[]>([]);
   const [selectedImage, setSelectedImage] = useState(0);
   const [cart, setCart] = useState<any[]>([]);
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     loadProduct();
     loadImages();
     loadCart();
   }, [id]);
+
+  useEffect(() => {
+    if (product) {
+      loadRecommendedProducts();
+    }
+  }, [product]);
 
   const loadProduct = async () => {
     const { data } = await supabase
@@ -70,26 +72,57 @@ export default function ProductDetail() {
     if (data) setImages(data);
   };
 
-  // Variants are not loaded on product detail page; admin will select variants in order edit.
+  const loadRecommendedProducts = async () => {
+    if (!product) return;
+
+    // First try to get products from the same category
+    let query = supabase
+      .from("products")
+      .select("*, categories(name)")
+      .eq("active", true)
+      .neq("id", product.id)
+      .limit(8);
+
+    if (product.category_id) {
+      query = query.eq("category_id", product.category_id);
+    }
+
+    const { data: categoryProducts } = await query;
+
+    // If we have enough products from the same category, use those
+    if (categoryProducts && categoryProducts.length >= 4) {
+      setRecommendedProducts(categoryProducts);
+      return;
+    }
+
+    // Otherwise, get random products to fill the gap
+    const { data: randomProducts } = await supabase
+      .from("products")
+      .select("*, categories(name)")
+      .eq("active", true)
+      .neq("id", product.id)
+      .limit(8);
+
+    setRecommendedProducts(randomProducts || []);
+  };
 
   const loadCart = () => {
     const savedCart = localStorage.getItem("cart");
     if (savedCart) setCart(JSON.parse(savedCart));
   };
 
-  const addToCart = () => {
-    if (!product) return;
-
-    // No variant selection required on the product detail page; admin will choose variants later.
+  const addToCart = (productToAdd?: Product) => {
+    const targetProduct = productToAdd || product;
+    if (!targetProduct) return;
 
     const cartItem = {
-      ...product,
+      ...targetProduct,
       quantity: 1,
       selectedVariants: {},
     };
 
     const existingItemIndex = cart.findIndex(
-      item => item.id === product.id && 
+      item => item.id === targetProduct.id && 
       JSON.stringify(item.selectedVariants) === JSON.stringify({})
     );
 
@@ -107,7 +140,7 @@ export default function ProductDetail() {
 
     toast({
       title: "Produto adicionado",
-      description: `${product.name} foi adicionado ao orçamento.`,
+      description: `${targetProduct.name} foi adicionado ao orçamento.`,
     });
   };
 
@@ -203,7 +236,6 @@ export default function ProductDetail() {
             {(product.altura || product.largura || product.comprimento) && (
               <div className="border border-border rounded-lg p-4 space-y-2 bg-muted/50">
                 <h3 className="text-sm font-semibold text-foreground mb-3">Especificações Técnicas</h3>
-                {/* NCM removed from product view: only dimensions are shown */}
                 {(product.altura || product.largura || product.comprimento) && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Dimensões (A x L x C):</span>
@@ -215,10 +247,8 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {/* Variant selection removed from product detail; admin will choose variants on order edit. */}
-
             <Button
-              onClick={addToCart}
+              onClick={() => addToCart()}
               size="lg"
               className="w-full bg-gradient-accent hover:opacity-90 transition-opacity"
             >
@@ -227,6 +257,27 @@ export default function ProductDetail() {
             </Button>
           </div>
         </div>
+
+        {/* Produtos Recomendados */}
+        {recommendedProducts.length > 0 && (
+          <section className="mt-16 pt-12 border-t border-border">
+            <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">
+              Produtos Recomendados
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {recommendedProducts.slice(0, 8).map((recProduct) => (
+                <ProductCard
+                  key={recProduct.id}
+                  id={recProduct.id}
+                  name={recProduct.name}
+                  description={recProduct.description}
+                  imageUrl={recProduct.image_url}
+                  onAddToCart={() => addToCart(recProduct)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
