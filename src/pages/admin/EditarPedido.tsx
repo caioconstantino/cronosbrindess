@@ -679,7 +679,8 @@ export default function EditarPedido() {
     // Shipping if exists
     if (order.shipping_cost && order.shipping_cost > 0) {
       y += 7;
-      pdf.text("FRETE:", pageWidth - margin - 60, y, { align: "right" });
+      const shippingType = (order as any).shipping_type || "CIF";
+      pdf.text(`FRETE (${shippingType}):`, pageWidth - margin - 60, y, { align: "right" });
       pdf.text(`R$ ${order.shipping_cost.toFixed(2)}`, pageWidth - margin, y, { align: "right" });
     }
     
