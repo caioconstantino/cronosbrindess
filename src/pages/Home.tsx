@@ -10,6 +10,13 @@ import { FeatureSection } from "@/components/FeatureSection";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowRight } from "lucide-react";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 export default function Home() {
   const [products, setProducts] = useState<any[]>([]);
   const [newProducts, setNewProducts] = useState<any[]>([]);
@@ -51,7 +58,7 @@ export default function Home() {
   const loadCategories = async () => {
     const {
       data
-    } = await supabase.from("categories").select("*").limit(6);
+    } = await supabase.from("categories").select("*").limit(12);
     if (data) setCategories(data);
   };
   const loadCart = () => {
@@ -107,30 +114,44 @@ export default function Home() {
                 Encontre o produto perfeito para cada ocasião
               </p>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
-              {categories.map(category => <Link key={category.id} to={`/produtos?categoria=${category.id}`} className="group relative overflow-hidden rounded-2xl shadow-card hover:shadow-premium hover-lift transition-all duration-300">
-                  <div className="aspect-square relative">
-                    {category.image_url ? <>
-                        <img src={category.image_url} alt={category.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/50 to-transparent" />
-                      </> : <div className="w-full h-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
-                        <span className="text-primary-foreground font-bold text-center p-2 md:p-4 text-sm md:text-base">
-                          {category.name}
-                        </span>
-                      </div>}
-                    <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4 transform group-hover:translate-y-0 transition-transform">
-                      <h3 className="text-sm md:text-base font-bold text-primary-foreground text-center drop-shadow-lg">
-                        {category.name}
-                      </h3>
-                      <div className="mt-1 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-xs text-primary-foreground/90 font-medium">
-                          Ver produtos →
-                        </span>
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {categories.map(category => (
+                  <CarouselItem key={category.id} className="pl-2 md:pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6">
+                    <Link to={`/produtos?categoria=${category.id}`} className="group relative overflow-hidden rounded-2xl shadow-card hover:shadow-premium hover-lift transition-all duration-300 block">
+                      <div className="aspect-square relative">
+                        {category.image_url ? <>
+                            <img src={category.image_url} alt={category.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/50 to-transparent" />
+                          </> : <div className="w-full h-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                            <span className="text-primary-foreground font-bold text-center p-2 md:p-4 text-sm md:text-base">
+                              {category.name}
+                            </span>
+                          </div>}
+                        <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4 transform group-hover:translate-y-0 transition-transform">
+                          <h3 className="text-sm md:text-base font-bold text-primary-foreground text-center drop-shadow-lg">
+                            {category.name}
+                          </h3>
+                          <div className="mt-1 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-xs text-primary-foreground/90 font-medium">
+                              Ver produtos →
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </Link>)}
-            </div>
+                    </Link>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden sm:flex -left-4 md:-left-6" />
+              <CarouselNext className="hidden sm:flex -right-4 md:-right-6" />
+            </Carousel>
           </div>
         </section>}
 
@@ -203,11 +224,11 @@ export default function Home() {
                   <ArrowRight className="ml-2 h-5 md:h-6 w-5 md:w-6" />
                 </Button>
               </Link>
-              <Link to="/produtos">
+              <a href="https://wa.me/5511937260395" target="_blank" rel="noopener noreferrer">
                 <Button size="lg" variant="outline" className="text-base md:text-xl border-2 border-primary-foreground hover:bg-primary-foreground font-bold px-8 md:px-12 py-6 md:py-7 transition-all text-slate-900">
                   Falar com Especialista
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
         </div>

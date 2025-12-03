@@ -231,6 +231,7 @@ export type Database = {
           order_number: string | null
           payment_terms: string | null
           shipping_cost: number | null
+          shipping_type: string | null
           status: string | null
           total: number | null
           updated_at: string
@@ -247,6 +248,7 @@ export type Database = {
           order_number?: string | null
           payment_terms?: string | null
           shipping_cost?: number | null
+          shipping_type?: string | null
           status?: string | null
           total?: number | null
           updated_at?: string
@@ -263,6 +265,7 @@ export type Database = {
           order_number?: string | null
           payment_terms?: string | null
           shipping_cost?: number | null
+          shipping_type?: string | null
           status?: string | null
           total?: number | null
           updated_at?: string

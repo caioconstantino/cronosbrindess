@@ -417,7 +417,8 @@ export default function EditarPedido() {
         payment_terms: order.payment_terms,
         delivery_terms: order.delivery_terms,
         validity_terms: order.validity_terms,
-        shipping_cost: order.shipping_cost || 0
+        shipping_cost: order.shipping_cost || 0,
+        shipping_type: (order as any).shipping_type || "CIF"
       })
       .eq("id", id);
 
@@ -1126,15 +1127,32 @@ export default function EditarPedido() {
               placeholder="10 DIAS - SUJEITO A CONFIRMAÇÃO DE ESTOQUE NO ATO DA FORMALIZAÇÃO DA COMPRA."
             />
           </div>
-          <div>
-            <label className="text-sm font-medium block mb-2">Frete (R$)</label>
-            <Input
-              type="number"
-              step="0.01"
-              value={order.shipping_cost || 0}
-              onChange={(e) => setOrder({ ...order, shipping_cost: parseFloat(e.target.value) || 0 })}
-              placeholder="0.00"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium block mb-2">Frete (R$)</label>
+              <Input
+                type="number"
+                step="0.01"
+                value={order.shipping_cost || 0}
+                onChange={(e) => setOrder({ ...order, shipping_cost: parseFloat(e.target.value) || 0 })}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium block mb-2">Tipo de Frete</label>
+              <Select
+                value={(order as any).shipping_type || "CIF"}
+                onValueChange={(value) => setOrder({ ...order, shipping_type: value } as any)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CIF">CIF</SelectItem>
+                  <SelectItem value="FOB">FOB</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
