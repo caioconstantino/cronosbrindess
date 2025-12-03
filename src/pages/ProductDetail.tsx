@@ -145,16 +145,16 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
           {/* Galeria de Imagens */}
           <div className="space-y-4">
-            <div className="w-full max-h-[400px] md:max-h-[500px] overflow-hidden rounded-lg bg-muted shadow-elegant flex items-center justify-center">
+            <div className="w-full rounded-lg bg-muted shadow-elegant flex items-center justify-center">
               {allImages.length > 0 ? (
                 <ImageZoom
                   src={allImages[selectedImage]?.image_url}
                   alt={product.name}
-                  className="w-full h-full"
+                  className="w-full"
                   zoomLevel={2.5}
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                <div className="w-full aspect-square flex items-center justify-center text-muted-foreground">
                   Sem imagem
                 </div>
               )}
