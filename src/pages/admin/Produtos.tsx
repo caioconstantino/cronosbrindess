@@ -55,7 +55,7 @@ export default function ProdutosNew() {
     name: "",
     description: "",
     image_url: "",
-    category_id: "",
+    category_ids: [] as string[],
     active: true,
     ncm: "",
     altura: "",
@@ -127,7 +127,7 @@ export default function ProdutosNew() {
       name: formData.name,
       description: formData.description || null,
       image_url: formData.image_url || null,
-      category_id: formData.category_id || null,
+      category_id: formData.category_ids.length > 0 ? formData.category_ids[0] : null,
       active: formData.active,
       ncm: formData.ncm || null,
       altura: formData.altura ? parseFloat(formData.altura) : null,
@@ -158,6 +158,12 @@ export default function ProdutosNew() {
       // Deletar variantes antigas
       await supabase
         .from("product_variants")
+        .delete()
+        .eq("product_id", productId);
+
+      // Deletar categorias antigas
+      await supabase
+        .from("product_categories")
         .delete()
         .eq("product_id", productId);
     } else {
@@ -196,6 +202,16 @@ export default function ProdutosNew() {
       await supabase.from("product_variants").insert(variantsToInsert);
     }
 
+    // Inserir categorias
+    if (formData.category_ids.length > 0) {
+      const categoriesToInsert = formData.category_ids.map(catId => ({
+        product_id: productId,
+        category_id: catId,
+      }));
+
+      await supabase.from("product_categories").insert(categoriesToInsert);
+    }
+
     toast.success(editingProduct ? "Produto atualizado com sucesso!" : "Produto criado com sucesso!");
     resetForm();
     loadProducts();
@@ -219,7 +235,7 @@ export default function ProdutosNew() {
       name: "",
       description: "",
       image_url: "",
-      category_id: "",
+      category_ids: [],
       active: true,
       ncm: "",
       altura: "",
@@ -233,13 +249,40 @@ export default function ProdutosNew() {
     setDialogOpen(false);
   };
 
+  const loadProductCategories = async (productId: string) => {
+    const { data } = await supabase
+      .from("product_categories")
+      .select("category_id")
+      .eq("product_id", productId);
+    
+    return data?.map(pc => pc.category_id) || [];
+  };
+
+  const toggleCategory = (categoryId: string) => {
+    setFormData(prev => {
+      const isSelected = prev.category_ids.includes(categoryId);
+      if (isSelected) {
+        return { ...prev, category_ids: prev.category_ids.filter(id => id !== categoryId) };
+      } else {
+        return { ...prev, category_ids: [...prev.category_ids, categoryId] };
+      }
+    });
+  };
+
   const openEditDialog = async (product: Product) => {
     setEditingProduct(product);
+    
+    const [images, variants, categoryIds] = await Promise.all([
+      loadProductImages(product.id),
+      loadProductVariants(product.id),
+      loadProductCategories(product.id),
+    ]);
+
     setFormData({
       name: product.name,
       description: product.description || "",
       image_url: product.image_url || "",
-      category_id: product.category_id || "",
+      category_ids: categoryIds,
       active: product.active ?? true,
       ncm: product.ncm || "",
       altura: product.altura?.toString() || "",
@@ -247,12 +290,8 @@ export default function ProdutosNew() {
       comprimento: product.comprimento?.toString() || "",
     });
 
-    const images = await loadProductImages(product.id);
     setAdditionalImages(images);
-
-    const variants = await loadProductVariants(product.id);
     setVariants(variants);
-
     setDialogOpen(true);
   };
 
@@ -323,22 +362,31 @@ export default function ProdutosNew() {
                   />
 
                   <div>
-                    <Label htmlFor="category">Categoria</Label>
-                    <Select
-                      value={formData.category_id}
-                      onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
+                    <Label>Categorias</Label>
+                    <div className="mt-2 border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+                      {categories.map((cat) => (
+                        <div key={cat.id} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`cat-${cat.id}`}
+                            checked={formData.category_ids.includes(cat.id)}
+                            onChange={() => toggleCategory(cat.id)}
+                            className="h-4 w-4 rounded border-gray-300"
+                          />
+                          <label htmlFor={`cat-${cat.id}`} className="text-sm cursor-pointer">
                             {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          </label>
+                        </div>
+                      ))}
+                      {categories.length === 0 && (
+                        <p className="text-sm text-muted-foreground">Nenhuma categoria cadastrada</p>
+                      )}
+                    </div>
+                    {formData.category_ids.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formData.category_ids.length} categoria(s) selecionada(s)
+                      </p>
+                    )}
                   </div>
 
                   <div>
