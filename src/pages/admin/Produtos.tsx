@@ -103,13 +103,12 @@ function CategoryMultiSelect({
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
-            setIsOpen(true);
+            setIsOpen(e.target.value.length > 0);
           }}
-          onFocus={() => setIsOpen(true)}
         />
         
         {/* Dropdown with suggestions */}
-        {isOpen && (search || filteredCategories.length > 0) && (
+        {isOpen && search.length > 0 && (
           <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
             {filteredCategories.length > 0 ? (
               filteredCategories.map(cat => (
@@ -119,16 +118,17 @@ function CategoryMultiSelect({
                   onClick={() => {
                     onToggle(cat.id);
                     setSearch("");
+                    setIsOpen(false);
                   }}
                 >
                   {cat.name}
                 </div>
               ))
-            ) : search ? (
+            ) : (
               <div className="px-3 py-2 text-sm text-muted-foreground">
                 Nenhuma categoria encontrada
               </div>
-            ) : null}
+            )}
           </div>
         )}
       </div>
