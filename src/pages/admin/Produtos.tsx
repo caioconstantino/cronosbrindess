@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,10 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/ImageUpload";
 import { MultiImageUpload } from "@/components/MultiImageUpload";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,6 +45,96 @@ type ProductVariant = {
   name: string;
   options: string[];
 };
+
+// Category Multi-Select Component with search
+function CategoryMultiSelect({ 
+  categories, 
+  selectedIds, 
+  onToggle 
+}: { 
+  categories: Category[]; 
+  selectedIds: string[]; 
+  onToggle: (id: string) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const filteredCategories = categories.filter(cat =>
+    cat.name.toLowerCase().includes(search.toLowerCase()) &&
+    !selectedIds.includes(cat.id)
+  );
+
+  const selectedCategories = categories.filter(cat => selectedIds.includes(cat.id));
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="space-y-2">
+      <Label>Categorias</Label>
+      
+      {/* Selected categories as badges */}
+      {selectedCategories.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {selectedCategories.map(cat => (
+            <Badge key={cat.id} variant="secondary" className="flex items-center gap-1">
+              {cat.name}
+              <X 
+                className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                onClick={() => onToggle(cat.id)}
+              />
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Search input */}
+      <div className="relative">
+        <Input
+          placeholder="Digite para buscar categorias..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+        />
+        
+        {/* Dropdown with suggestions */}
+        {isOpen && (search || filteredCategories.length > 0) && (
+          <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
+            {filteredCategories.length > 0 ? (
+              filteredCategories.map(cat => (
+                <div
+                  key={cat.id}
+                  className="px-3 py-2 cursor-pointer hover:bg-accent text-sm"
+                  onClick={() => {
+                    onToggle(cat.id);
+                    setSearch("");
+                  }}
+                >
+                  {cat.name}
+                </div>
+              ))
+            ) : search ? (
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                Nenhuma categoria encontrada
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function ProdutosNew() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -361,33 +451,11 @@ export default function ProdutosNew() {
                     label="Imagem Principal do Produto"
                   />
 
-                  <div>
-                    <Label>Categorias</Label>
-                    <div className="mt-2 border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
-                      {categories.map((cat) => (
-                        <div key={cat.id} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id={`cat-${cat.id}`}
-                            checked={formData.category_ids.includes(cat.id)}
-                            onChange={() => toggleCategory(cat.id)}
-                            className="h-4 w-4 rounded border-gray-300"
-                          />
-                          <label htmlFor={`cat-${cat.id}`} className="text-sm cursor-pointer">
-                            {cat.name}
-                          </label>
-                        </div>
-                      ))}
-                      {categories.length === 0 && (
-                        <p className="text-sm text-muted-foreground">Nenhuma categoria cadastrada</p>
-                      )}
-                    </div>
-                    {formData.category_ids.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formData.category_ids.length} categoria(s) selecionada(s)
-                      </p>
-                    )}
-                  </div>
+                  <CategoryMultiSelect
+                    categories={categories}
+                    selectedIds={formData.category_ids}
+                    onToggle={toggleCategory}
+                  />
 
                   <div>
                     <Label htmlFor="ncm">NCM</Label>
