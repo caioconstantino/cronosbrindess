@@ -11,10 +11,22 @@ export default function Products() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [cart, setCart] = useState<any[]>([]);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const { toast } = useToast();
+
+  // Sync selected category from URL
+  const categoryParam = searchParams.get("categoria");
+  const selectedCategory = categoryParam || "all";
+
+  const handleCategoryChange = (value: string) => {
+    if (value === "all") {
+      searchParams.delete("categoria");
+    } else {
+      searchParams.set("categoria", value);
+    }
+    setSearchParams(searchParams);
+  };
 
   useEffect(() => {
     loadCategories();
@@ -23,21 +35,37 @@ export default function Products() {
 
   useEffect(() => {
     loadProducts();
-  }, [searchParams, searchTerm, selectedCategory]);
+  }, [selectedCategory, searchTerm]);
 
   const loadCategories = async () => {
-    const { data } = await supabase.from("categories").select("*");
+    const { data, error } = await supabase.from("categories").select("*").order("name");
+    console.log("Categories loaded:", data, error);
     if (data) setCategories(data);
   };
 
   const loadProducts = async () => {
+    let productIds: string[] | null = null;
+    
+    // If filtering by category, get product IDs from product_categories
+    if (selectedCategory && selectedCategory !== "all") {
+      const { data: productCategories } = await supabase
+        .from("product_categories")
+        .select("product_id")
+        .eq("category_id", selectedCategory);
+      
+      if (productCategories && productCategories.length > 0) {
+        productIds = productCategories.map(pc => pc.product_id);
+      } else {
+        // No products in this category
+        setProducts([]);
+        return;
+      }
+    }
+
     let query = supabase.from("products").select("*").eq("active", true);
 
-    const categoryParam = searchParams.get("categoria");
-    const categoryFilter = categoryParam || selectedCategory;
-
-    if (categoryFilter && categoryFilter !== "all") {
-      query = query.eq("category_id", categoryFilter);
+    if (productIds) {
+      query = query.in("id", productIds);
     }
 
     if (searchTerm) {
@@ -95,7 +123,7 @@ export default function Products() {
             className="md:max-w-sm"
           />
 
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <Select value={selectedCategory} onValueChange={handleCategoryChange}>
             <SelectTrigger className="md:max-w-xs">
               <SelectValue placeholder="Todas as categorias" />
             </SelectTrigger>
