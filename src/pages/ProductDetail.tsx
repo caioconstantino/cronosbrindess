@@ -44,6 +44,9 @@ export default function ProductDetail() {
     loadProduct();
     loadImages();
     loadCart();
+    setSelectedImage(0); // Reset para a primeira imagem
+    // Scroll para o topo quando o produto mudar
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [id]);
 
   useEffect(() => {
