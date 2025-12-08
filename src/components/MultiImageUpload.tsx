@@ -24,46 +24,21 @@ export const MultiImageUpload = ({
 }: MultiImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
 
-  const uploadImage = async (file: File) => {
-    try {
-      setUploading(true);
-
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-      const filePath = fileName;
-
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
-
-      onImagesChange([...images, publicUrl]);
-      toast.success("Imagem adicionada com sucesso!");
-    } catch (error: any) {
-      toast.error("Erro ao enviar imagem: " + error.message);
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     
+    if (files.length === 0) return;
+
+    // Validar quantidade total
     if (images.length + files.length > maxImages) {
       toast.error(`Você pode adicionar no máximo ${maxImages} imagens`);
+      e.target.value = ""; // Reset input
       return;
     }
 
+    // Validar arquivos antes de processar
+    const validFiles: File[] = [];
     for (const file of files) {
       if (!file.type.startsWith("image/")) {
         toast.error(`${file.name} não é uma imagem válida`);
@@ -75,7 +50,55 @@ export const MultiImageUpload = ({
         continue;
       }
 
-      await uploadImage(file);
+      validFiles.push(file);
+    }
+
+    if (validFiles.length === 0) {
+      e.target.value = ""; // Reset input
+      return;
+    }
+
+    // Processar todas as imagens
+    setUploading(true);
+    const uploadedUrls: string[] = [];
+    
+    try {
+      // Processar sequencialmente para evitar sobrecarga
+      for (const file of validFiles) {
+        try {
+          const fileExt = file.name.split(".").pop();
+          const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+          const filePath = fileName;
+
+          const { error: uploadError } = await supabase.storage
+            .from(bucket)
+            .upload(filePath, file, {
+              cacheControl: "3600",
+              upsert: false,
+            });
+
+          if (uploadError) {
+            throw uploadError;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from(bucket)
+            .getPublicUrl(filePath);
+
+          uploadedUrls.push(publicUrl);
+        } catch (error: any) {
+          toast.error(`Erro ao enviar ${file.name}: ${error.message}`);
+        }
+      }
+
+      // Adicionar todas as URLs de uma vez
+      if (uploadedUrls.length > 0) {
+        onImagesChange([...images, ...uploadedUrls]);
+        toast.success(`${uploadedUrls.length} imagem(ns) adicionada(s) com sucesso!`);
+      }
+    } finally {
+      setUploading(false);
+      e.target.value = ""; // Reset input para permitir selecionar novamente
     }
   };
 

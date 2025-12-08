@@ -85,10 +85,6 @@ export default function Cart() {
     localStorage.setItem("cart", JSON.stringify(newCart));
   };
 
-  const getTotal = () => {
-    return cart.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
-  };
-
   const handleCheckout = () => {
     navigate("/checkout");
   };
@@ -144,12 +140,6 @@ export default function Cart() {
                           })}
                         </div>
                       )}
-                      
-                      {item.price && (
-                        <p className="text-primary font-bold mt-1 text-sm md:text-base">
-                          R$ {item.price.toFixed(2)}
-                        </p>
-                      )}
 
                       <div className="flex items-center gap-2 md:gap-4 mt-3 md:mt-4">
                         <div className="flex items-center gap-1 md:gap-2">
@@ -201,10 +191,6 @@ export default function Cart() {
                   <div className="flex justify-between text-sm md:text-base">
                     <span>Itens:</span>
                     <span>{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
-                  </div>
-                  <div className="flex justify-between text-lg md:text-xl font-bold">
-                    <span>Total:</span>
-                    <span className="text-primary">R$ {getTotal().toFixed(2)}</span>
                   </div>
                 </div>
 
