@@ -176,6 +176,9 @@ export default function ProdutosNew() {
   const [additionalImages, setAdditionalImages] = useState<string[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [newVariant, setNewVariant] = useState({ name: "", options: "" });
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 20;
+  const hasAddedDefaultVariants = useRef(false);
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -187,8 +190,29 @@ export default function ProdutosNew() {
     if (isAdmin) {
       loadProducts();
       loadCategories();
+      // Adicionar variante padrão em todos os produtos existentes (apenas uma vez)
+      if (!hasAddedDefaultVariants.current) {
+        addDefaultVariantToAllProducts();
+        hasAddedDefaultVariants.current = true;
+      }
     }
   }, [user, isAdmin, loading]);
+
+  // Função para adicionar variante padrão em todos os produtos que não têm
+  const addDefaultVariantToAllProducts = async () => {
+    const { data: allProducts } = await supabase
+      .from("products")
+      .select("id");
+
+    if (!allProducts) return;
+
+    // Executar em background sem bloquear a UI
+    Promise.all(
+      allProducts.map(product => ensureDefaultVariant(product.id))
+    ).catch(error => {
+      console.error("Erro ao adicionar variante padrão:", error);
+    });
+  };
 
   const loadProducts = async () => {
     const { data, error } = await supabase
@@ -229,6 +253,28 @@ export default function ProdutosNew() {
       name: v.name,
       options: Array.isArray(v.options) ? v.options as string[] : []
     })) || [];
+  };
+
+  // Função para garantir que a variante padrão "Gravação" existe
+  const ensureDefaultVariant = async (productId: string) => {
+    // Verificar se já existe a variante "Gravação"
+    const { data: existing } = await supabase
+      .from("product_variants")
+      .select("id")
+      .eq("product_id", productId)
+      .eq("name", "Gravação")
+      .single();
+
+    // Se não existe, criar
+    if (!existing) {
+      await supabase
+        .from("product_variants")
+        .insert({
+          product_id: productId,
+          name: "Gravação",
+          options: ["Silk", "Laser"]
+        });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -302,15 +348,32 @@ export default function ProdutosNew() {
       await supabase.from("product_images").insert(imagesToInsert);
     }
 
-    // Inserir variantes
-    if (variants.length > 0) {
-      const variantsToInsert = variants.map(v => ({
-        product_id: productId,
-        name: v.name,
-        options: v.options,
-      }));
+    // Inserir variantes (incluindo a padrão se não estiver na lista)
+    const hasDefaultVariant = variants.some(v => v.name === "Gravação");
+    const variantsToInsert = hasDefaultVariant 
+      ? variants.map(v => ({
+          product_id: productId,
+          name: v.name,
+          options: v.options,
+        }))
+      : [
+          ...variants.map(v => ({
+            product_id: productId,
+            name: v.name,
+            options: v.options,
+          })),
+          {
+            product_id: productId,
+            name: "Gravação",
+            options: ["Silk", "Laser"]
+          }
+        ];
 
+    if (variantsToInsert.length > 0) {
       await supabase.from("product_variants").insert(variantsToInsert);
+    } else {
+      // Se não há variantes, adicionar apenas a padrão
+      await ensureDefaultVariant(productId);
     }
 
     // Inserir categorias
@@ -354,7 +417,8 @@ export default function ProdutosNew() {
       comprimento: "",
     });
     setAdditionalImages([]);
-    setVariants([]);
+    // Adicionar variante padrão "Gravação" ao resetar o formulário
+    setVariants([{ name: "Gravação", options: ["Silk", "Laser"] }]);
     setNewVariant({ name: "", options: "" });
     setEditingProduct(null);
     setDialogOpen(false);
@@ -383,6 +447,9 @@ export default function ProdutosNew() {
   const openEditDialog = async (product: Product) => {
     setEditingProduct(product);
     
+    // Garantir que a variante padrão existe antes de carregar
+    await ensureDefaultVariant(product.id);
+    
     const [images, variants, categoryIds] = await Promise.all([
       loadProductImages(product.id),
       loadProductVariants(product.id),
@@ -404,6 +471,17 @@ export default function ProdutosNew() {
     setAdditionalImages(images);
     setVariants(variants);
     setDialogOpen(true);
+  };
+
+  // Calcular produtos paginados
+  const totalPages = Math.ceil(products.length / productsPerPage);
+  const startIndex = (currentPage - 1) * productsPerPage;
+  const endIndex = startIndex + productsPerPage;
+  const paginatedProducts = products.slice(startIndex, endIndex);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const addVariant = () => {
@@ -612,7 +690,7 @@ export default function ProdutosNew() {
       </div>
 
       <div className="grid gap-4">
-        {products.map((product) => (
+        {paginatedProducts.map((product) => (
           <Card key={product.id} className="hover:shadow-elegant transition-shadow">
             <CardHeader>
               <div className="flex justify-between items-start">
@@ -661,6 +739,61 @@ export default function ProdutosNew() {
           </Card>
         ))}
       </div>
+
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <Button
+            variant="outline"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Anterior
+          </Button>
+          
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+              // Mostrar apenas algumas páginas ao redor da atual
+              if (
+                page === 1 ||
+                page === totalPages ||
+                (page >= currentPage - 2 && page <= currentPage + 2)
+              ) {
+                return (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    onClick={() => handlePageChange(page)}
+                    className="min-w-[40px]"
+                  >
+                    {page}
+                  </Button>
+                );
+              } else if (
+                page === currentPage - 3 ||
+                page === currentPage + 3
+              ) {
+                return <span key={page} className="px-2">...</span>;
+              }
+              return null;
+            })}
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Próxima
+          </Button>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="text-center text-sm text-muted-foreground mt-2">
+          Página {currentPage} de {totalPages} • {products.length} produto(s) no total
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -61,6 +61,9 @@ export default function CriarPedido() {
   // UI
   const [saving, setSaving] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [productSearch, setProductSearch] = useState("");
+  const [isProductSearchOpen, setIsProductSearchOpen] = useState(false);
+  const productSearchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -88,6 +91,20 @@ export default function CriarPedido() {
     setProducts(data || []);
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (productSearchRef.current && !productSearchRef.current.contains(event.target as Node)) {
+        setIsProductSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(productSearch.toLowerCase())
+  );
+
   const loadVariants = async (productId: string) => {
     if (variants[productId]) return;
 
@@ -113,13 +130,14 @@ export default function CriarPedido() {
     }));
   };
 
-  const addItem = () => {
-    if (!selectedProductId) {
+  const addItem = (productId?: string) => {
+    const idToUse = productId || selectedProductId;
+    if (!idToUse) {
       toast.error("Selecione um produto");
       return;
     }
 
-    const product = products.find(p => p.id === selectedProductId);
+    const product = products.find(p => p.id === idToUse);
     if (!product) return;
 
     const newItem: OrderItem = {
@@ -132,6 +150,8 @@ export default function CriarPedido() {
 
     setOrderItems([...orderItems, newItem]);
     setSelectedProductId("");
+    setProductSearch("");
+    setIsProductSearchOpen(false);
     loadVariants(product.id);
   };
 
@@ -418,20 +438,57 @@ export default function CriarPedido() {
             <CardTitle>Itens do Pedido</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Selecione um produto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {products.map((product) => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button onClick={addItem}>
+            <div className="flex gap-2" ref={productSearchRef}>
+              <div className="flex-1 relative">
+                <Input
+                  placeholder="Buscar produto..."
+                  value={productSearch}
+                  onChange={(e) => {
+                    setProductSearch(e.target.value);
+                    setIsProductSearchOpen(true);
+                  }}
+                  onFocus={() => setIsProductSearchOpen(true)}
+                />
+                
+                {/* Dropdown com sugestões de produtos */}
+                {isProductSearchOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-80 overflow-y-auto">
+                    {filteredProducts.length > 0 ? (
+                      filteredProducts.map((product) => (
+                        <div
+                          key={product.id}
+                          className="px-3 py-2 cursor-pointer hover:bg-accent flex items-center gap-3"
+                          onClick={() => {
+                            setSelectedProductId(product.id);
+                            setProductSearch(product.name);
+                            setIsProductSearchOpen(false);
+                          }}
+                        >
+                          <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                            {product.image_url ? (
+                              <img
+                                src={product.image_url}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                                Sem imagem
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-sm flex-1">{product.name}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        Nenhum produto encontrado
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <Button onClick={() => addItem()}>
                 <Plus className="h-4 w-4 mr-2" />
                 Adicionar
               </Button>
