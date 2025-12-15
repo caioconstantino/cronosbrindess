@@ -59,10 +59,11 @@ function CategoryMultiSelect({
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
+  // Filtrar categorias baseado na busca
   const filteredCategories = categories.filter(cat =>
-    cat.name.toLowerCase().includes(search.toLowerCase()) &&
-    !selectedIds.includes(cat.id)
+    cat.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const selectedCategories = categories.filter(cat => selectedIds.includes(cat.id));
@@ -77,13 +78,24 @@ function CategoryMultiSelect({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleInputClick = () => {
+    setIsOpen(true);
+    inputRef.current?.focus();
+  };
+
+  const handleCategorySelect = (categoryId: string) => {
+    onToggle(categoryId);
+    setSearch("");
+    // Não fechar o dropdown para permitir seleção múltipla
+  };
+
   return (
     <div ref={containerRef} className="space-y-2">
       <Label>Categorias</Label>
       
       {/* Selected categories as badges */}
       {selectedCategories.length > 0 && (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 mb-2">
           {selectedCategories.map(cat => (
             <Badge key={cat.id} variant="secondary" className="flex items-center gap-1">
               {cat.name}
@@ -96,34 +108,43 @@ function CategoryMultiSelect({
         </div>
       )}
 
-      {/* Search input */}
+      {/* Search input with dropdown */}
       <div className="relative">
         <Input
-          placeholder="Digite para buscar categorias..."
+          ref={inputRef}
+          placeholder="Clique para buscar e selecionar categorias..."
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
-            setIsOpen(e.target.value.length > 0);
+            setIsOpen(true);
           }}
+          onClick={handleInputClick}
+          onFocus={() => setIsOpen(true)}
         />
         
-        {/* Dropdown with suggestions */}
-        {isOpen && search.length > 0 && (
-          <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
+        {/* Dropdown with all categories (filtered by search) */}
+        {isOpen && (
+          <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
             {filteredCategories.length > 0 ? (
-              filteredCategories.map(cat => (
-                <div
-                  key={cat.id}
-                  className="px-3 py-2 cursor-pointer hover:bg-accent text-sm"
-                  onClick={() => {
-                    onToggle(cat.id);
-                    setSearch("");
-                    setIsOpen(false);
-                  }}
-                >
-                  {cat.name}
-                </div>
-              ))
+              filteredCategories.map(cat => {
+                const isSelected = selectedIds.includes(cat.id);
+                return (
+                  <div
+                    key={cat.id}
+                    className={`px-3 py-2 cursor-pointer text-sm flex items-center justify-between ${
+                      isSelected 
+                        ? "bg-accent font-medium" 
+                        : "hover:bg-accent/50"
+                    }`}
+                    onClick={() => handleCategorySelect(cat.id)}
+                  >
+                    <span>{cat.name}</span>
+                    {isSelected && (
+                      <span className="text-xs text-muted-foreground">✓ Selecionado</span>
+                    )}
+                  </div>
+                );
+              })
             ) : (
               <div className="px-3 py-2 text-sm text-muted-foreground">
                 Nenhuma categoria encontrada
