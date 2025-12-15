@@ -255,25 +255,40 @@ export default function ProdutosNew() {
     })) || [];
   };
 
+  // Opções padrão da variante "Gravação"
+  const defaultGravingOptions = ["SILK", "LASER", "DIGITAL", "TRANSFER", "LASER CO2", "DTF", "TRANSFER CILINDRICO", "PELICULA", "DIGITAL 360"];
+
   // Função para garantir que a variante padrão "Gravação" existe
   const ensureDefaultVariant = async (productId: string) => {
     // Verificar se já existe a variante "Gravação"
     const { data: existing } = await supabase
       .from("product_variants")
-      .select("id")
+      .select("id, options")
       .eq("product_id", productId)
       .eq("name", "Gravação")
       .single();
 
-    // Se não existe, criar
+    // Se não existe, criar. Se existe mas as opções estão diferentes, atualizar
     if (!existing) {
       await supabase
         .from("product_variants")
         .insert({
           product_id: productId,
           name: "Gravação",
-          options: ["Silk", "Laser"]
+          options: defaultGravingOptions
         });
+    } else {
+      // Atualizar as opções se estiverem diferentes
+      const existingOptions = Array.isArray(existing.options) ? existing.options as string[] : [];
+      const optionsMatch = existingOptions.length === defaultGravingOptions.length &&
+        existingOptions.every((opt, idx) => opt === defaultGravingOptions[idx]);
+      
+      if (!optionsMatch) {
+        await supabase
+          .from("product_variants")
+          .update({ options: defaultGravingOptions })
+          .eq("id", existing.id);
+      }
     }
   };
 
@@ -365,7 +380,7 @@ export default function ProdutosNew() {
           {
             product_id: productId,
             name: "Gravação",
-            options: ["Silk", "Laser"]
+            options: defaultGravingOptions
           }
         ];
 
@@ -418,7 +433,7 @@ export default function ProdutosNew() {
     });
     setAdditionalImages([]);
     // Adicionar variante padrão "Gravação" ao resetar o formulário
-    setVariants([{ name: "Gravação", options: ["Silk", "Laser"] }]);
+    setVariants([{ name: "Gravação", options: defaultGravingOptions }]);
     setNewVariant({ name: "", options: "" });
     setEditingProduct(null);
     setDialogOpen(false);
