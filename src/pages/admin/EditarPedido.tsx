@@ -1309,9 +1309,9 @@ export default function EditarPedido() {
                   <label className="text-sm text-muted-foreground block mb-2">Qtd</label>
                   <Input
                     type="number"
-                    min="1"
-                    value={newItemQuantity}
-                    onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
+                    min="0"
+                    value={newItemQuantity === 0 ? "" : newItemQuantity}
+                    onChange={(e) => setNewItemQuantity(e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
                   />
                 </div>
                 <Button onClick={addItem} className="mt-6" disabled={!selectedProduct}>
