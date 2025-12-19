@@ -258,15 +258,16 @@ export default function EditarPedido() {
   };
 
   const updateItemPrice = (itemId: string, newPrice: string) => {
-    const price = parseFloat(newPrice) || 0;
+    // Allow empty string, parse only if there's a value
+    const price = newPrice === "" ? 0 : parseFloat(newPrice) || 0;
     setItems(items.map(item => 
       item.id === itemId ? { ...item, price } : item
     ));
   };
 
   const updateItemQuantity = (itemId: string, newQuantity: string) => {
-    const quantity = parseInt(newQuantity) || 1;
-    if (quantity < 1) return;
+    // Allow empty string, default to 0 temporarily until user types
+    const quantity = newQuantity === "" ? 0 : parseInt(newQuantity) || 0;
     setItems(items.map(item => 
       item.id === itemId ? { ...item, quantity } : item
     ));
@@ -626,7 +627,9 @@ export default function EditarPedido() {
       // Add variants to item name if they exist
       let displayName = itemName;
       if (item.selected_variants && Object.keys(item.selected_variants).length > 0) {
-        const variantText = Object.values(item.selected_variants).join(", ");
+        const variantText = Object.entries(item.selected_variants)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(" | ");
         displayName = `${itemName} (${variantText})`;
       }
 
@@ -1222,8 +1225,8 @@ export default function EditarPedido() {
                     <label className="text-sm text-muted-foreground block mb-1">Quantidade</label>
                     <Input
                       type="number"
-                      min="1"
-                      value={item.quantity}
+                      min="0"
+                      value={item.quantity === 0 ? "" : item.quantity}
                       onChange={(e) => updateItemQuantity(item.id, e.target.value)}
                       className="w-24"
                     />
@@ -1233,7 +1236,8 @@ export default function EditarPedido() {
                     <Input
                       type="number"
                       step="0.01"
-                      value={item.price}
+                      min="0"
+                      value={item.price === 0 ? "" : item.price}
                       onChange={(e) => updateItemPrice(item.id, e.target.value)}
                       className="w-32"
                       placeholder="0.00"
