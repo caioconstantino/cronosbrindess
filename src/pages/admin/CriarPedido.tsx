@@ -547,10 +547,23 @@ export default function CriarPedido() {
                               <Input
                                 type="number"
                                 min="1"
-                                value={item.quantity}
-                                onChange={(e) =>
-                                  updateItem(index, "quantity", parseInt(e.target.value) || 1)
-                                }
+                                value={item.quantity || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === "") {
+                                    updateItem(index, "quantity", 0);
+                                  } else {
+                                    const numVal = parseInt(val);
+                                    if (!isNaN(numVal) && numVal >= 0) {
+                                      updateItem(index, "quantity", numVal);
+                                    }
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  if (e.target.value === "" || parseInt(e.target.value) < 1) {
+                                    updateItem(index, "quantity", 1);
+                                  }
+                                }}
                               />
                             </div>
                             <div>
@@ -559,10 +572,23 @@ export default function CriarPedido() {
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                value={item.price}
-                                onChange={(e) =>
-                                  updateItem(index, "price", parseFloat(e.target.value) || 0)
-                                }
+                                value={item.price || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === "") {
+                                    updateItem(index, "price", 0);
+                                  } else {
+                                    const numVal = parseFloat(val);
+                                    if (!isNaN(numVal) && numVal >= 0) {
+                                      updateItem(index, "price", numVal);
+                                    }
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  if (e.target.value === "" || parseFloat(e.target.value) < 0) {
+                                    updateItem(index, "price", 0);
+                                  }
+                                }}
                               />
                             </div>
                           </div>

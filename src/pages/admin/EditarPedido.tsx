@@ -90,6 +90,18 @@ export default function EditarPedido() {
   const [customItemPrice, setCustomItemPrice] = useState<number>(0);
   const [customItemQuantity, setCustomItemQuantity] = useState<number>(1);
   const [customItemImage, setCustomItemImage] = useState("");
+  // Estados para edição de dados do cliente
+  const [customerEmpresa, setCustomerEmpresa] = useState("");
+  const [customerContato, setCustomerContato] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerTelefone, setCustomerTelefone] = useState("");
+  const [customerCpfCnpj, setCustomerCpfCnpj] = useState("");
+  const [customerCep, setCustomerCep] = useState("");
+  const [customerEndereco, setCustomerEndereco] = useState("");
+  const [customerNumero, setCustomerNumero] = useState("");
+  const [customerComplemento, setCustomerComplemento] = useState("");
+  const [customerCidade, setCustomerCidade] = useState("");
+  const [customerEstado, setCustomerEstado] = useState("");
   const { user, isAdmin, isVendedor, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const productSearchRef = useRef<HTMLDivElement>(null);
@@ -188,6 +200,21 @@ export default function EditarPedido() {
       salesperson: salespersonData,
     });
 
+    // Initialize customer data states for editing
+    if (profileData) {
+      setCustomerEmpresa(profileData.empresa || "");
+      setCustomerContato(profileData.contato || "");
+      setCustomerEmail(profileData.email || "");
+      setCustomerTelefone(profileData.telefone || "");
+      setCustomerCpfCnpj(profileData.cpf_cnpj || "");
+      setCustomerCep(profileData.cep || "");
+      setCustomerEndereco(profileData.endereco || "");
+      setCustomerNumero(profileData.numero || "");
+      setCustomerComplemento(profileData.complemento || "");
+      setCustomerCidade(profileData.cidade || "");
+      setCustomerEstado(profileData.estado || "");
+    }
+
     // Set email for dialog
     if (profileData?.email) {
       setEmailTo(profileData.email);
@@ -259,18 +286,34 @@ export default function EditarPedido() {
 
   const updateItemPrice = (itemId: string, newPrice: string) => {
     // Allow empty string, parse only if there's a value
-    const price = newPrice === "" ? 0 : parseFloat(newPrice) || 0;
-    setItems(items.map(item => 
-      item.id === itemId ? { ...item, price } : item
-    ));
+    if (newPrice === "") {
+      setItems(items.map(item => 
+        item.id === itemId ? { ...item, price: 0 } : item
+      ));
+    } else {
+      const price = parseFloat(newPrice);
+      if (!isNaN(price) && price >= 0) {
+        setItems(items.map(item => 
+          item.id === itemId ? { ...item, price } : item
+        ));
+      }
+    }
   };
 
   const updateItemQuantity = (itemId: string, newQuantity: string) => {
     // Allow empty string, default to 0 temporarily until user types
-    const quantity = newQuantity === "" ? 0 : parseInt(newQuantity) || 0;
-    setItems(items.map(item => 
-      item.id === itemId ? { ...item, quantity } : item
-    ));
+    if (newQuantity === "") {
+      setItems(items.map(item => 
+        item.id === itemId ? { ...item, quantity: 0 } : item
+      ));
+    } else {
+      const quantity = parseInt(newQuantity);
+      if (!isNaN(quantity) && quantity >= 0) {
+        setItems(items.map(item => 
+          item.id === itemId ? { ...item, quantity } : item
+        ));
+      }
+    }
   };
 
   const updateSelectedVariant = (itemId: string, variantName: string, value: string) => {
@@ -405,8 +448,59 @@ export default function EditarPedido() {
     return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
+  const saveCustomerData = async () => {
+    if (!order?.profiles?.email) {
+      toast.error("Email do cliente é obrigatório");
+      return false;
+    }
+
+    // Update customer profile using the upsert function
+    const { error: profileError } = await supabase.rpc(
+      "upsert_customer_profile",
+      {
+        p_email: customerEmail,
+        p_empresa: customerEmpresa || null,
+        p_contato: customerContato || null,
+        p_telefone: customerTelefone || null,
+        p_cpf_cnpj: customerCpfCnpj || null,
+        p_cep: customerCep || null,
+        p_cidade: customerCidade || null,
+        p_estado: customerEstado || null,
+        p_endereco: customerEndereco || null,
+        p_numero: customerNumero || null,
+        p_complemento: customerComplemento || null,
+      }
+    );
+
+    if (profileError) {
+      toast.error("Erro ao atualizar dados do cliente");
+      return false;
+    }
+
+    // Update order customer_email if email changed
+    if (customerEmail !== order.profiles.email && order.id) {
+      const { error: orderEmailError } = await supabase
+        .from("orders")
+        .update({ customer_email: customerEmail })
+        .eq("id", order.id);
+
+      if (orderEmailError) {
+        toast.error("Erro ao atualizar email do pedido");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const saveOrder = async () => {
     if (!id || !order) return;
+
+    // Save customer data first
+    const customerSaved = await saveCustomerData();
+    if (!customerSaved) {
+      return;
+    }
 
     const total = calculateTotal();
 
@@ -440,7 +534,7 @@ export default function EditarPedido() {
         .eq("id", item.id);
 
       if (itemError) {
-        toast.error(`Erro ao atualizar item ${item.products.name}`);
+        toast.error(`Erro ao atualizar item ${item.products?.name || "sem nome"}`);
         return;
       }
     }
@@ -1069,35 +1163,129 @@ export default function EditarPedido() {
         <CardHeader>
           <CardTitle>Informações do Cliente</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Empresa</p>
-            <p className="font-medium">{order.profiles?.empresa || "-"}</p>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="customer-empresa">Empresa</Label>
+              <Input
+                id="customer-empresa"
+                value={customerEmpresa}
+                onChange={(e) => setCustomerEmpresa(e.target.value)}
+                placeholder="Nome da empresa"
+              />
+            </div>
+            <div>
+              <Label htmlFor="customer-contato">Contato</Label>
+              <Input
+                id="customer-contato"
+                value={customerContato}
+                onChange={(e) => setCustomerContato(e.target.value)}
+                placeholder="Nome do contato"
+              />
+            </div>
+            <div>
+              <Label htmlFor="customer-email">Email *</Label>
+              <Input
+                id="customer-email"
+                type="email"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                placeholder="email@exemplo.com"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="customer-telefone">Telefone</Label>
+              <Input
+                id="customer-telefone"
+                value={customerTelefone}
+                onChange={(e) => setCustomerTelefone(e.target.value)}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+            <div>
+              <Label htmlFor="customer-cpf-cnpj">CPF/CNPJ</Label>
+              <Input
+                id="customer-cpf-cnpj"
+                value={customerCpfCnpj}
+                onChange={(e) => setCustomerCpfCnpj(e.target.value)}
+                placeholder="000.000.000-00"
+              />
+            </div>
+            <div>
+              <Label htmlFor="customer-cep">CEP</Label>
+              <Input
+                id="customer-cep"
+                value={customerCep}
+                onChange={(e) => setCustomerCep(e.target.value)}
+                placeholder="00000-000"
+              />
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Contato</p>
-            <p className="font-medium">{order.profiles?.contato || "-"}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <Label htmlFor="customer-endereco">Endereço</Label>
+              <Input
+                id="customer-endereco"
+                value={customerEndereco}
+                onChange={(e) => setCustomerEndereco(e.target.value)}
+                placeholder="Rua, Avenida..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="customer-numero">Número</Label>
+              <Input
+                id="customer-numero"
+                value={customerNumero}
+                onChange={(e) => setCustomerNumero(e.target.value)}
+                placeholder="123"
+              />
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Email</p>
-            <p className="font-medium">{order.profiles?.email || "-"}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="customer-complemento">Complemento</Label>
+              <Input
+                id="customer-complemento"
+                value={customerComplemento}
+                onChange={(e) => setCustomerComplemento(e.target.value)}
+                placeholder="Apto, Sala..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="customer-cidade">Cidade</Label>
+              <Input
+                id="customer-cidade"
+                value={customerCidade}
+                onChange={(e) => setCustomerCidade(e.target.value)}
+                placeholder="São Paulo"
+              />
+            </div>
+            <div>
+              <Label htmlFor="customer-estado">Estado</Label>
+              <Input
+                id="customer-estado"
+                value={customerEstado}
+                onChange={(e) => setCustomerEstado(e.target.value)}
+                placeholder="SP"
+                maxLength={2}
+              />
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Telefone</p>
-            <p className="font-medium">{order.profiles?.telefone || "-"}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Preferência de Contato</p>
-            <p className="font-medium">
-              {order.contact_preference === "telefone" && "Telefone"}
-              {order.contact_preference === "whatsapp" && "WhatsApp"}
-              {order.contact_preference === "email" && "Email"}
-              {!order.contact_preference && "-"}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Data do Pedido</p>
-            <p className="font-medium">{format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+            <div>
+              <p className="text-sm text-muted-foreground">Preferência de Contato</p>
+              <p className="font-medium">
+                {order.contact_preference === "telefone" && "Telefone"}
+                {order.contact_preference === "whatsapp" && "WhatsApp"}
+                {order.contact_preference === "email" && "Email"}
+                {!order.contact_preference && "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Data do Pedido</p>
+              <p className="font-medium">{format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -1228,6 +1416,11 @@ export default function EditarPedido() {
                       min="0"
                       value={item.quantity === 0 ? "" : item.quantity}
                       onChange={(e) => updateItemQuantity(item.id, e.target.value)}
+                      onBlur={(e) => {
+                        if (e.target.value === "" || parseInt(e.target.value) < 1) {
+                          updateItemQuantity(item.id, "1");
+                        }
+                      }}
                       className="w-24"
                     />
                   </div>
@@ -1239,6 +1432,11 @@ export default function EditarPedido() {
                       min="0"
                       value={item.price === 0 ? "" : item.price}
                       onChange={(e) => updateItemPrice(item.id, e.target.value)}
+                      onBlur={(e) => {
+                        if (e.target.value === "" || parseFloat(e.target.value) < 0) {
+                          updateItemPrice(item.id, "0");
+                        }
+                      }}
                       className="w-32"
                       placeholder="0.00"
                     />
