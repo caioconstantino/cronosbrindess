@@ -48,10 +48,11 @@ export default function Home() {
     if (data) setNewProducts(data);
   };
   const loadPromoProducts = async () => {
+    // Products no longer have a price column - load by most recent instead
     const {
       data
-    } = await supabase.from("products").select("*").eq("active", true).not("price", "is", null).order("price", {
-      ascending: true
+    } = await supabase.from("products").select("*").eq("active", true).order("created_at", {
+      ascending: false
     }).limit(12);
     if (data) setPromoProducts(data);
   };
