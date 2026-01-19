@@ -71,7 +71,7 @@ export default function Clientes() {
             .from("profiles")
             .select("email, empresa")
             .eq("id", profile.assigned_salesperson_id)
-            .single();
+            .maybeSingle();
           
           return { ...profile, salesperson: salespersonData };
         }

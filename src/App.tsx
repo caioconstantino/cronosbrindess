@@ -51,6 +51,7 @@ const App = () => (
             <Route path="categorias" element={<Categorias />} />
             <Route path="pedidos" element={<Pedidos />} />
             <Route path="pedidos/novo" element={<CriarPedido />} />
+            <Route path="pedidos/:id" element={<EditarPedido />} />
             <Route path="pedidos/:id/editar" element={<EditarPedido />} />
             <Route path="clientes" element={<Clientes />} />
             <Route path="usuarios" element={<Usuarios />} />

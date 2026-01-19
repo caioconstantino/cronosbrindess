@@ -92,7 +92,8 @@ export default function EditClientDialog({
     setSaving(false);
 
     if (error) {
-      toast.error("Erro ao salvar cliente");
+      console.error("Erro ao salvar cliente:", error);
+      toast.error(`Erro ao salvar cliente: ${error.message}`);
       return;
     }
 
