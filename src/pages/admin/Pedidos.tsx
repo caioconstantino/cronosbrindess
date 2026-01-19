@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { logOrderChange } from "@/hooks/useOrderAudit";
 
 type Order = {
   id: string;
@@ -122,6 +123,7 @@ export default function Pedidos() {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     const order = orders.find(o => o.id === orderId);
+    const oldStatus = order?.status || "pending";
     
     const { error } = await supabase
       .from("orders")
@@ -131,6 +133,18 @@ export default function Pedidos() {
     if (error) {
       toast.error("Erro ao atualizar status do pedido");
     } else {
+      // Log the status change
+      await logOrderChange(
+        orderId,
+        "status_changed",
+        {
+          status: { old: oldStatus, new: newStatus }
+        },
+        user?.id,
+        user?.email,
+        order?.profiles?.contato || user?.email
+      );
+
       toast.success("Status atualizado com sucesso!");
       
       // Send email to customer
