@@ -165,7 +165,7 @@ export default function EditarPedido() {
 
     if (orderError || !orderData) {
       toast.error("Erro ao carregar pedido");
-      navigate("/admin/pedidos");
+      navigate(isAdmin ? "/admin/pedidos" : "/vendedor/pedidos");
       return;
     }
 
@@ -659,7 +659,7 @@ export default function EditarPedido() {
     }
 
     toast.success("Pedido atualizado com sucesso!");
-    navigate("/admin/pedidos");
+    navigate(isAdmin ? "/admin/pedidos" : "/vendedor/pedidos");
   };
 
   const generatePDF = async (download = true) => {
