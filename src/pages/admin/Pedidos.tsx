@@ -180,6 +180,9 @@ export default function Pedidos() {
             processing: "Em Processamento",
             completed: "Concluído",
             cancelled: "Cancelado",
+            sold: "Vendido",
+            lost: "Perdido",
+            shipped: "Enviado",
           };
 
           await supabase.functions.invoke("send-email", {
@@ -208,11 +211,14 @@ export default function Pedidos() {
   };
 
   const getStatusBadge = (status: string | null) => {
-    const variants: Record<string, "default" | "secondary" | "destructive"> = {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       pending: "secondary",
       processing: "default",
       completed: "default",
       cancelled: "destructive",
+      sold: "default",
+      lost: "destructive",
+      shipped: "outline",
     };
 
     const labels: Record<string, string> = {
@@ -220,6 +226,9 @@ export default function Pedidos() {
       processing: "Processando",
       completed: "Concluído",
       cancelled: "Cancelado",
+      sold: "Vendido",
+      lost: "Perdido",
+      shipped: "Enviado",
     };
 
     return (
@@ -263,6 +272,9 @@ export default function Pedidos() {
             <SelectItem value="pending">Pendente</SelectItem>
             <SelectItem value="processing">Processando</SelectItem>
             <SelectItem value="completed">Concluído</SelectItem>
+            <SelectItem value="sold">Vendido</SelectItem>
+            <SelectItem value="shipped">Enviado</SelectItem>
+            <SelectItem value="lost">Perdido</SelectItem>
             <SelectItem value="cancelled">Cancelado</SelectItem>
           </SelectContent>
         </Select>
@@ -345,6 +357,9 @@ export default function Pedidos() {
                       <SelectItem value="pending">Pendente</SelectItem>
                       <SelectItem value="processing">Processando</SelectItem>
                       <SelectItem value="completed">Concluído</SelectItem>
+                      <SelectItem value="sold">Vendido</SelectItem>
+                      <SelectItem value="shipped">Enviado</SelectItem>
+                      <SelectItem value="lost">Perdido</SelectItem>
                       <SelectItem value="cancelled">Cancelado</SelectItem>
                     </SelectContent>
                   </Select>
