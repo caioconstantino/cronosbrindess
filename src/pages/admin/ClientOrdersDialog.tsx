@@ -76,7 +76,7 @@ export default function ClientOrdersDialog({
 
   const handleViewOrder = (orderId: string) => {
     onOpenChange(false);
-    navigate(`/admin/pedidos/${orderId}`);
+    navigate(`/admin/pedidos/${orderId}/editar`);
   };
 
   return (
