@@ -271,6 +271,7 @@ export default function CriarPedido() {
         product_id: item.productId,
         quantity: item.quantity,
         price: item.price,
+        selected_variants: item.selectedVariants || {},
       }));
 
       const { error: itemsError } = await supabase
