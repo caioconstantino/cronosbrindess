@@ -64,10 +64,28 @@ function formatValue(key: string, value: any): string {
     return `R$ ${Number(value).toFixed(2)}`;
   }
   
-  if (key === "selected_variants" && typeof value === "object") {
-    return Object.entries(value)
+  // Handle selected_variants specifically
+  if (key === "selected_variants" && typeof value === "object" && value !== null) {
+    const entries = Object.entries(value);
+    if (entries.length === 0) return "-";
+    return entries
       .map(([k, v]) => `${k}: ${v}`)
-      .join(", ") || "-";
+      .join(", ");
+  }
+  
+  // Handle any object type (for nested variant objects in logs)
+  if (typeof value === "object" && value !== null) {
+    // If it's an object with variant-like structure, format it nicely
+    const entries = Object.entries(value);
+    if (entries.length === 0) return "-";
+    return entries
+      .map(([k, v]) => {
+        if (typeof v === "object" && v !== null) {
+          return `${k}: ${JSON.stringify(v)}`;
+        }
+        return `${k}: ${v}`;
+      })
+      .join(", ");
   }
   
   return String(value);
