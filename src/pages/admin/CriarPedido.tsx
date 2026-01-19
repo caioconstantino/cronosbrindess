@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,20 +34,24 @@ type OrderItem = {
 
 export default function CriarPedido() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAdmin, isVendedor, loading: authLoading } = useAuth();
   
+  // Get client data from navigation state (when coming from Clientes page)
+  const clientData = (location.state as { clientData?: Record<string, string> })?.clientData;
+  
   // Cliente
-  const [empresa, setEmpresa] = useState("");
-  const [contato, setContato] = useState("");
-  const [email, setEmail] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [cpfCnpj, setCpfCnpj] = useState("");
-  const [cep, setCep] = useState("");
-  const [endereco, setEndereco] = useState("");
-  const [numero, setNumero] = useState("");
-  const [complemento, setComplemento] = useState("");
-  const [cidade, setCidade] = useState("");
-  const [estado, setEstado] = useState("");
+  const [empresa, setEmpresa] = useState(clientData?.empresa || "");
+  const [contato, setContato] = useState(clientData?.contato || "");
+  const [email, setEmail] = useState(clientData?.email || "");
+  const [telefone, setTelefone] = useState(clientData?.telefone || "");
+  const [cpfCnpj, setCpfCnpj] = useState(clientData?.cpf_cnpj || "");
+  const [cep, setCep] = useState(clientData?.cep || "");
+  const [endereco, setEndereco] = useState(clientData?.endereco || "");
+  const [numero, setNumero] = useState(clientData?.numero || "");
+  const [complemento, setComplemento] = useState(clientData?.complemento || "");
+  const [cidade, setCidade] = useState(clientData?.cidade || "");
+  const [estado, setEstado] = useState(clientData?.estado || "");
   
   // Pedido
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
