@@ -4,10 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { Eye, Plus } from "lucide-react";
+import { Edit, Plus, Lock } from "lucide-react";
+import { logOrderChange } from "@/hooks/useOrderAudit";
 
 type Order = {
   id: string;
@@ -105,6 +107,42 @@ export default function VendedorPedidos() {
     }
   };
 
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    const order = orders.find(o => o.id === orderId);
+    
+    // Prevent changing status if order is already sold
+    if (order?.status === "sold") {
+      toast.error("Pedidos vendidos não podem ser alterados");
+      return;
+    }
+    
+    const oldStatus = order?.status || "pending";
+    
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: newStatus })
+      .eq("id", orderId);
+
+    if (error) {
+      toast.error("Erro ao atualizar status do pedido");
+    } else {
+      // Log the status change
+      await logOrderChange(
+        orderId,
+        "status_changed",
+        {
+          status: { old: oldStatus, new: newStatus }
+        },
+        user?.id,
+        user?.email,
+        order?.profiles?.contato || user?.email
+      );
+
+      toast.success("Status atualizado com sucesso!");
+      loadOrders();
+    }
+  };
+
   const getStatusBadge = (status: string | null) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       pending: "secondary",
@@ -167,46 +205,79 @@ export default function VendedorPedidos() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {orders.map((order) => (
-            <Card key={order.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>
-                      Pedido #{order.order_number || order.id.slice(0, 8)}
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}
-                    </p>
-                    {order.profiles && (
-                      <div className="mt-2 text-sm">
-                        <p><strong>Empresa:</strong> {order.profiles.empresa}</p>
-                        <p><strong>Contato:</strong> {order.profiles.contato}</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    {getStatusBadge(order.status)}
-                    {order.total && (
-                      <p className="text-lg font-semibold">
-                        R$ {order.total.toFixed(2)}
+          {orders.map((order) => {
+            const isSold = order.status === "sold";
+            
+            return (
+              <Card key={order.id}>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle>
+                        Pedido #{order.order_number || order.id.slice(0, 8)}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(order.created_at), "dd/MM/yyyy HH:mm")}
                       </p>
-                    )}
+                      {order.profiles && (
+                        <div className="mt-2 text-sm">
+                          <p><strong>Empresa:</strong> {order.profiles.empresa}</p>
+                          <p><strong>Contato:</strong> {order.profiles.contato}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      {getStatusBadge(order.status)}
+                      {order.total && (
+                        <p className="text-lg font-semibold">
+                          R$ {order.total.toFixed(2)}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={() => navigate(`/vendedor/pedidos/${order.id}/editar`)}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  Visualizar Detalhes
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                    <div className="flex gap-2 items-center">
+                      <span className="text-sm">Alterar status:</span>
+                      {isSold ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Lock className="h-4 w-4" />
+                          <span>Bloqueado</span>
+                        </div>
+                      ) : (
+                        <Select
+                          value={order.status || "pending"}
+                          onValueChange={(value) => updateOrderStatus(order.id, value)}
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pendente</SelectItem>
+                            <SelectItem value="processing">Processando</SelectItem>
+                            <SelectItem value="completed">Concluído</SelectItem>
+                            <SelectItem value="sold">Vendido</SelectItem>
+                            <SelectItem value="shipped">Enviado</SelectItem>
+                            <SelectItem value="lost">Perdido</SelectItem>
+                            <SelectItem value="cancelled">Cancelado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                    <Button
+                      onClick={() => navigate(`/vendedor/pedidos/${order.id}/editar`)}
+                      variant="default"
+                      className="w-full sm:w-auto"
+                    >
+                      <Edit className="mr-2 h-4 w-4" />
+                      {isSold ? "Visualizar Pedido" : "Editar Pedido"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
