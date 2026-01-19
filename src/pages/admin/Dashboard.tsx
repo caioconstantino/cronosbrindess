@@ -14,6 +14,7 @@ type PeriodFilter = "last6months" | "last12months" | "thisYear" | "lastYear" | "
 
 interface MonthlySales {
   month: string;
+  monthKey: string; // yyyy-MM format for filtering
   total: number;
   orders: number;
 }
@@ -125,12 +126,13 @@ export default function Dashboard() {
     const salesArray: MonthlySales[] = Object.entries(monthlyData)
       .map(([key, value]) => ({
         month: format(new Date(key + "-01"), "MMM/yy", { locale: ptBR }),
+        monthKey: key, // Keep yyyy-MM format for navigation
         total: value.total,
         orders: value.orders,
       }))
       .sort((a, b) => {
-        const dateA = new Date(a.month);
-        const dateB = new Date(b.month);
+        const dateA = new Date(a.monthKey + "-01");
+        const dateB = new Date(b.monthKey + "-01");
         return dateA.getTime() - dateB.getTime();
       });
 
@@ -276,6 +278,12 @@ export default function Dashboard() {
                     fill="hsl(var(--primary))" 
                     radius={[4, 4, 0, 0]}
                     name="Total Vendido"
+                    className="cursor-pointer"
+                    onClick={(data) => {
+                      if (data && data.monthKey) {
+                        navigate(`/admin/pedidos?month=${data.monthKey}`);
+                      }
+                    }}
                   />
                 </BarChart>
               </ResponsiveContainer>

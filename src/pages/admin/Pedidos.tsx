@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, startOfMonth, endOfMonth, parse } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Plus, Search, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { logOrderChange } from "@/hooks/useOrderAudit";
 
 type Order = {
@@ -34,6 +35,8 @@ export default function Pedidos() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [clientSearch, setClientSearch] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const monthFilter = searchParams.get("month"); // yyyy-MM format
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -81,12 +84,28 @@ export default function Pedidos() {
     setOrders(ordersWithProfiles);
   };
 
-  // Filter orders based on status and client search
+  // Filter orders based on status, client search, and month
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       // Status filter
       if (statusFilter !== "all" && order.status !== statusFilter) {
         return false;
+      }
+
+      // Month filter (from dashboard chart click)
+      if (monthFilter) {
+        try {
+          const filterDate = parse(monthFilter + "-01", "yyyy-MM-dd", new Date());
+          const monthStart = startOfMonth(filterDate);
+          const monthEnd = endOfMonth(filterDate);
+          const orderDate = new Date(order.created_at);
+          
+          if (orderDate < monthStart || orderDate > monthEnd) {
+            return false;
+          }
+        } catch (e) {
+          console.error("Error parsing month filter:", e);
+        }
       }
 
       // Client search filter
@@ -107,7 +126,7 @@ export default function Pedidos() {
 
       return true;
     });
-  }, [orders, statusFilter, clientSearch]);
+  }, [orders, statusFilter, clientSearch, monthFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
@@ -248,6 +267,23 @@ export default function Pedidos() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Active month filter indicator */}
+      {monthFilter && (
+        <div className="flex items-center gap-2 mb-4">
+          <Badge variant="secondary" className="flex items-center gap-2 px-3 py-1">
+            <span>
+              Filtrando: {format(parse(monthFilter + "-01", "yyyy-MM-dd", new Date()), "MMMM 'de' yyyy", { locale: ptBR })}
+            </span>
+            <button
+              onClick={() => setSearchParams({})}
+              className="ml-1 hover:text-destructive transition-colors"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        </div>
+      )}
 
       {/* Results count */}
       <p className="text-sm text-muted-foreground mb-4">
