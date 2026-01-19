@@ -84,11 +84,11 @@ export default function Dashboard() {
   const loadSalesData = async () => {
     const { start, end } = getDateRange();
     
-    // Fetch sold orders within the period (only "vendido" counts as finalized/paid)
+    // Fetch sold orders within the period - include both "sold" and "completed" for backwards compatibility
     const { data: orders, error } = await supabase
       .from("orders")
       .select("id, total, created_at, status")
-      .eq("status", "sold")
+      .in("status", ["sold", "completed"])
       .gte("created_at", start.toISOString())
       .lte("created_at", end.toISOString());
 
