@@ -7,7 +7,7 @@ import { Package, ShoppingCart, Users, Layers, DollarSign, TrendingUp } from "lu
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend } from "recharts";
-import { format, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear, subYears } from "date-fns";
+import { format, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear, subYears, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 type PeriodFilter = "last6months" | "last12months" | "thisYear" | "lastYear" | "all";
@@ -47,20 +47,21 @@ export default function Dashboard() {
 
   const getDateRange = () => {
     const now = new Date();
+    const endOfToday = endOfDay(now); // Use end of day to include all orders from today
     switch (periodFilter) {
       case "last6months":
-        return { start: subMonths(now, 6), end: now };
+        return { start: subMonths(now, 6), end: endOfToday };
       case "last12months":
-        return { start: subMonths(now, 12), end: now };
+        return { start: subMonths(now, 12), end: endOfToday };
       case "thisYear":
         return { start: startOfYear(now), end: endOfYear(now) };
       case "lastYear":
         const lastYear = subYears(now, 1);
         return { start: startOfYear(lastYear), end: endOfYear(lastYear) };
       case "all":
-        return { start: new Date(2020, 0, 1), end: now };
+        return { start: new Date(2020, 0, 1), end: endOfToday };
       default:
-        return { start: subMonths(now, 6), end: now };
+        return { start: subMonths(now, 6), end: endOfToday };
     }
   };
 
