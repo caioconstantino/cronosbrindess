@@ -45,12 +45,16 @@ const fieldLabels: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   pending: "Pendente",
+  processing: "Processando",
+  completed: "Concluído",
   approved: "Aprovado",
   rejected: "Rejeitado",
   in_production: "Em Produção",
   shipped: "Enviado",
   delivered: "Entregue",
   cancelled: "Cancelado",
+  sold: "Vendido",
+  lost: "Perdido",
 };
 
 function formatValue(key: string, value: any): string {

@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ArrowLeft, Download, Mail, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, Download, Mail, Trash2, Plus, Lock } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import jsPDF from "jspdf";
 import logoImage from "@/assets/logo-cronos.png";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
@@ -109,6 +110,10 @@ export default function EditarPedido() {
   const { user, isAdmin, isVendedor, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const productSearchRef = useRef<HTMLDivElement>(null);
+
+  // Check if order is sold and user is not admin - prevent editing
+  const isSoldOrder = order?.status === "sold";
+  const isReadOnly = isSoldOrder && !isAdmin;
 
   useEffect(() => {
     if (authLoading) return;
@@ -553,6 +558,12 @@ export default function EditarPedido() {
 
   const saveOrder = async () => {
     if (!id || !order) return;
+
+    // Prevent non-admins from editing sold orders
+    if (isReadOnly) {
+      toast.error("Pedidos vendidos não podem ser alterados");
+      return;
+    }
 
     // Save customer data first
     const customerSaved = await saveCustomerData();
@@ -1261,11 +1272,22 @@ export default function EditarPedido() {
             <Mail className="h-4 w-4" />
             Enviar por Email
           </Button>
-          <Button onClick={saveOrder}>
-            Salvar Alterações
+          <Button onClick={saveOrder} disabled={isReadOnly}>
+            {isReadOnly ? "Bloqueado" : "Salvar Alterações"}
           </Button>
         </div>
       </div>
+
+      {/* Read-only warning for sold orders */}
+      {isReadOnly && (
+        <Alert variant="destructive" className="border-orange-500 bg-orange-50 text-orange-800">
+          <Lock className="h-4 w-4" />
+          <AlertDescription>
+            Este pedido foi marcado como <strong>Vendido</strong> e não pode mais ser alterado. 
+            Somente administradores podem fazer modificações em pedidos vendidos.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>
@@ -1280,6 +1302,7 @@ export default function EditarPedido() {
                 value={customerEmpresa}
                 onChange={(e) => setCustomerEmpresa(e.target.value)}
                 placeholder="Nome da empresa"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1289,6 +1312,7 @@ export default function EditarPedido() {
                 value={customerContato}
                 onChange={(e) => setCustomerContato(e.target.value)}
                 placeholder="Nome do contato"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1300,6 +1324,7 @@ export default function EditarPedido() {
                 onChange={(e) => setCustomerEmail(e.target.value)}
                 placeholder="email@exemplo.com"
                 required
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1309,6 +1334,7 @@ export default function EditarPedido() {
                 value={customerTelefone}
                 onChange={(e) => setCustomerTelefone(e.target.value)}
                 placeholder="(11) 99999-9999"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1318,6 +1344,7 @@ export default function EditarPedido() {
                 value={customerCpfCnpj}
                 onChange={(e) => setCustomerCpfCnpj(e.target.value)}
                 placeholder="000.000.000-00"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1327,6 +1354,7 @@ export default function EditarPedido() {
                 value={customerCep}
                 onChange={(e) => setCustomerCep(e.target.value)}
                 placeholder="00000-000"
+                disabled={isReadOnly}
               />
             </div>
           </div>
@@ -1338,6 +1366,7 @@ export default function EditarPedido() {
                 value={customerEndereco}
                 onChange={(e) => setCustomerEndereco(e.target.value)}
                 placeholder="Rua, Avenida..."
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1347,6 +1376,7 @@ export default function EditarPedido() {
                 value={customerNumero}
                 onChange={(e) => setCustomerNumero(e.target.value)}
                 placeholder="123"
+                disabled={isReadOnly}
               />
             </div>
           </div>
@@ -1358,6 +1388,7 @@ export default function EditarPedido() {
                 value={customerComplemento}
                 onChange={(e) => setCustomerComplemento(e.target.value)}
                 placeholder="Apto, Sala..."
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1367,6 +1398,7 @@ export default function EditarPedido() {
                 value={customerCidade}
                 onChange={(e) => setCustomerCidade(e.target.value)}
                 placeholder="São Paulo"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1377,6 +1409,7 @@ export default function EditarPedido() {
                 onChange={(e) => setCustomerEstado(e.target.value)}
                 placeholder="SP"
                 maxLength={2}
+                disabled={isReadOnly}
               />
             </div>
           </div>
@@ -1409,6 +1442,7 @@ export default function EditarPedido() {
               value={order.payment_terms || ""}
               onChange={(e) => setOrder({ ...order, payment_terms: e.target.value })}
               placeholder="21 DDL, CONTADOS A PARTIR DA EMISSÃO DA NF DE VENDA."
+              disabled={isReadOnly}
             />
           </div>
           <div>
@@ -1417,6 +1451,7 @@ export default function EditarPedido() {
               value={order.delivery_terms || ""}
               onChange={(e) => setOrder({ ...order, delivery_terms: e.target.value })}
               placeholder="A COMBINAR"
+              disabled={isReadOnly}
             />
           </div>
           <div>
@@ -1425,6 +1460,7 @@ export default function EditarPedido() {
               value={order.validity_terms || ""}
               onChange={(e) => setOrder({ ...order, validity_terms: e.target.value })}
               placeholder="10 DIAS - SUJEITO A CONFIRMAÇÃO DE ESTOQUE NO ATO DA FORMALIZAÇÃO DA COMPRA."
+              disabled={isReadOnly}
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1436,6 +1472,7 @@ export default function EditarPedido() {
                 value={order.shipping_cost || 0}
                 onChange={(e) => setOrder({ ...order, shipping_cost: parseFloat(e.target.value) || 0 })}
                 placeholder="0.00"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1443,6 +1480,7 @@ export default function EditarPedido() {
               <Select
                 value={(order as any).shipping_type || "CIF"}
                 onValueChange={(value) => setOrder({ ...order, shipping_type: value } as any)}
+                disabled={isReadOnly}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
@@ -1530,6 +1568,7 @@ export default function EditarPedido() {
                         }
                       }}
                       className="w-24"
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div>
@@ -1547,6 +1586,7 @@ export default function EditarPedido() {
                       }}
                       className="w-32"
                       placeholder="0.00"
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div className="text-right min-w-[100px]">
@@ -1560,6 +1600,7 @@ export default function EditarPedido() {
                     size="icon"
                     onClick={() => removeItem(item.id)}
                     className="text-destructive hover:text-destructive"
+                    disabled={isReadOnly}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

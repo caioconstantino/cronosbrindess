@@ -84,11 +84,11 @@ export default function Dashboard() {
   const loadSalesData = async () => {
     const { start, end } = getDateRange();
     
-    // Fetch completed orders within the period
+    // Fetch sold orders within the period (only "vendido" counts as finalized/paid)
     const { data: orders, error } = await supabase
       .from("orders")
       .select("id, total, created_at, status")
-      .eq("status", "completed")
+      .eq("status", "sold")
       .gte("created_at", start.toISOString())
       .lte("created_at", end.toISOString());
 
@@ -223,7 +223,7 @@ export default function Dashboard() {
 
         <Card className="bg-primary/5 border-primary/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pedidos Concluídos</CardTitle>
+            <CardTitle className="text-sm font-medium">Pedidos Vendidos</CardTitle>
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -239,7 +239,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatCurrency(totalSold)}</div>
-            <p className="text-xs text-muted-foreground">Pedidos concluídos</p>
+            <p className="text-xs text-muted-foreground">Pedidos vendidos</p>
           </CardContent>
         </Card>
       </div>
@@ -321,7 +321,7 @@ export default function Dashboard() {
                     stroke="hsl(var(--primary))" 
                     strokeWidth={2}
                     dot={{ fill: "hsl(var(--primary))" }}
-                    name="Pedidos Concluídos"
+                    name="Pedidos Vendidos"
                   />
                 </LineChart>
               </ResponsiveContainer>

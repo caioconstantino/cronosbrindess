@@ -106,11 +106,14 @@ export default function VendedorPedidos() {
   };
 
   const getStatusBadge = (status: string | null) => {
-    const variants: Record<string, "default" | "secondary" | "destructive"> = {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       pending: "secondary",
       processing: "default",
       completed: "default",
       cancelled: "destructive",
+      sold: "default",
+      lost: "destructive",
+      shipped: "outline",
     };
 
     const labels: Record<string, string> = {
@@ -118,11 +121,14 @@ export default function VendedorPedidos() {
       processing: "Processando",
       completed: "Concluído",
       cancelled: "Cancelado",
+      sold: "Vendido",
+      lost: "Perdido",
+      shipped: "Enviado",
     };
 
     return (
-      <Badge variant={variants[status || "pending"]}>
-        {labels[status || "pending"]}
+      <Badge variant={variants[status || "pending"] || "secondary"}>
+        {labels[status || "pending"] || status}
       </Badge>
     );
   };

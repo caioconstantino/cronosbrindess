@@ -69,6 +69,9 @@ export default function ClientOrdersDialog({
       processing: { label: "Em andamento", variant: "default" },
       completed: { label: "Concluído", variant: "outline" },
       cancelled: { label: "Cancelado", variant: "destructive" },
+      sold: { label: "Vendido", variant: "default" },
+      lost: { label: "Perdido", variant: "destructive" },
+      shipped: { label: "Enviado", variant: "outline" },
     };
     const statusInfo = statusMap[status || "pending"] || statusMap.pending;
     return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
