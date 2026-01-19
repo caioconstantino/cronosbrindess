@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,8 +14,9 @@ import whatsappIcon from "@/assets/whatsapp-icon.png";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useRef } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
+import OrderAuditLog from "@/components/OrderAuditLog";
+import { logOrderChange, detectChanges } from "@/hooks/useOrderAudit";
 
 type OrderItem = {
   id: string;
@@ -90,6 +91,9 @@ export default function EditarPedido() {
   const [customItemPrice, setCustomItemPrice] = useState<number>(0);
   const [customItemQuantity, setCustomItemQuantity] = useState<number>(1);
   const [customItemImage, setCustomItemImage] = useState("");
+  const [auditRefreshTrigger, setAuditRefreshTrigger] = useState(0);
+  const [originalOrder, setOriginalOrder] = useState<any>(null);
+  const [originalItems, setOriginalItems] = useState<OrderItem[]>([]);
   // Estados para edição de dados do cliente
   const [customerEmpresa, setCustomerEmpresa] = useState("");
   const [customerContato, setCustomerContato] = useState("");
@@ -194,11 +198,14 @@ export default function EditarPedido() {
       }
     }
 
-    setOrder({
+    const orderWithRelations = {
       ...orderData,
       profiles: profileData,
       salesperson: salespersonData,
-    });
+    };
+    
+    setOrder(orderWithRelations);
+    setOriginalOrder({ ...orderData });
 
     // Initialize customer data states for editing
     if (profileData) {
@@ -242,6 +249,7 @@ export default function EditarPedido() {
       toast.error("Erro ao carregar itens do pedido");
     } else if (itemsData) {
     setItems(itemsData as any);
+      setOriginalItems(JSON.parse(JSON.stringify(itemsData)) as OrderItem[]);
       // Load variants for each product in the order items
       const uniqueProductIds = Array.from(new Set((itemsData || []).map((i: any) => i.product_id).filter(Boolean)));
       for (const pid of uniqueProductIds) {
@@ -328,6 +336,8 @@ export default function EditarPedido() {
   const removeItem = async (itemId: string) => {
     if (!confirm("Deseja realmente remover este item?")) return;
 
+    const removedItem = items.find(item => item.id === itemId);
+    
     const { error } = await supabase
       .from("order_items")
       .delete()
@@ -336,6 +346,23 @@ export default function EditarPedido() {
     if (error) {
       toast.error("Erro ao remover item");
       return;
+    }
+
+    // Log the removal
+    if (id && removedItem) {
+      await logOrderChange(
+        id,
+        "item_removed",
+        {
+          product_name: { old: removedItem.products?.name || removedItem.custom_name || "Item", new: null },
+          quantity: { old: removedItem.quantity, new: null },
+          price: { old: removedItem.price, new: null },
+        },
+        user?.id,
+        user?.email,
+        order?.profiles?.contato || user?.email
+      );
+      setAuditRefreshTrigger(prev => prev + 1);
     }
 
     setItems(items.filter(item => item.id !== itemId));
@@ -378,6 +405,21 @@ export default function EditarPedido() {
 
     if (data) {
       setItems([...items, data as any]);
+      
+      // Log item addition
+      await logOrderChange(
+        id,
+        "item_added",
+        {
+          product_name: { old: null, new: selectedProduct.name },
+          quantity: { old: null, new: newItemQuantity },
+        },
+        user?.id,
+        user?.email,
+        order?.profiles?.contato || user?.email
+      );
+      setAuditRefreshTrigger(prev => prev + 1);
+      
       setSelectedProduct(null);
       setProductSearch("");
       setNewItemQuantity(1);
@@ -425,6 +467,22 @@ export default function EditarPedido() {
 
     if (data) {
       setItems([...items, data as any]);
+      
+      // Log custom item addition
+      await logOrderChange(
+        id,
+        "item_added",
+        {
+          product_name: { old: null, new: customItemName },
+          quantity: { old: null, new: customItemQuantity },
+          price: { old: null, new: customItemPrice },
+        },
+        user?.id,
+        user?.email,
+        order?.profiles?.contato || user?.email
+      );
+      setAuditRefreshTrigger(prev => prev + 1);
+      
       setCustomItemDialogOpen(false);
       setCustomItemName("");
       setCustomItemPrice(0);
@@ -503,18 +561,26 @@ export default function EditarPedido() {
     }
 
     const total = calculateTotal();
+    const newOrderData = {
+      total,
+      payment_terms: order.payment_terms,
+      delivery_terms: order.delivery_terms,
+      validity_terms: order.validity_terms,
+      shipping_cost: order.shipping_cost || 0,
+      shipping_type: (order as any).shipping_type || "CIF"
+    };
+
+    // Detect changes in order data
+    const orderChanges = detectChanges(
+      originalOrder || {},
+      { ...order, total },
+      ["total", "payment_terms", "delivery_terms", "validity_terms", "shipping_cost", "status"]
+    );
 
     // Update order total and terms
     const { error: orderError } = await supabase
       .from("orders")
-      .update({ 
-        total,
-        payment_terms: order.payment_terms,
-        delivery_terms: order.delivery_terms,
-        validity_terms: order.validity_terms,
-        shipping_cost: order.shipping_cost || 0,
-        shipping_type: (order as any).shipping_type || "CIF"
-      })
+      .update(newOrderData)
       .eq("id", id);
 
     if (orderError) {
@@ -522,8 +588,37 @@ export default function EditarPedido() {
       return;
     }
 
+    // Track item changes
+    const itemChanges: Record<string, { old: any; new: any }> = {};
+
     // Update each item price and quantity
     for (const item of items) {
+      const originalItem = originalItems.find(oi => oi.id === item.id);
+      
+      // Check for item-level changes
+      if (originalItem) {
+        if (originalItem.quantity !== item.quantity) {
+          itemChanges[`${item.products?.name || item.custom_name || 'Item'} - Quantidade`] = {
+            old: originalItem.quantity,
+            new: item.quantity
+          };
+        }
+        if (originalItem.price !== item.price) {
+          itemChanges[`${item.products?.name || item.custom_name || 'Item'} - Preço`] = {
+            old: originalItem.price,
+            new: item.price
+          };
+        }
+        const oldVariants = JSON.stringify(originalItem.selected_variants || {});
+        const newVariants = JSON.stringify(item.selected_variants || {});
+        if (oldVariants !== newVariants) {
+          itemChanges[`${item.products?.name || item.custom_name || 'Item'} - Variantes`] = {
+            old: originalItem.selected_variants || {},
+            new: item.selected_variants || {}
+          };
+        }
+      }
+
       const { error: itemError } = await supabase
         .from("order_items")
         .update({ 
@@ -537,6 +632,19 @@ export default function EditarPedido() {
         toast.error(`Erro ao atualizar item ${item.products?.name || "sem nome"}`);
         return;
       }
+    }
+
+    // Log all changes
+    const allChanges = { ...orderChanges, ...itemChanges };
+    if (Object.keys(allChanges).length > 0) {
+      await logOrderChange(
+        id,
+        "updated",
+        allChanges,
+        user?.id,
+        user?.email,
+        order?.profiles?.contato || user?.email
+      );
     }
 
     toast.success("Pedido atualizado com sucesso!");
@@ -1554,6 +1662,11 @@ export default function EditarPedido() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Audit Log */}
+      {id && (
+        <OrderAuditLog orderId={id} refreshTrigger={auditRefreshTrigger} />
+      )}
     </div>
   );
 }

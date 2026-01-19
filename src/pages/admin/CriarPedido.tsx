@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { logOrderChange } from "@/hooks/useOrderAudit";
 
 type Product = {
   id: string;
@@ -279,6 +280,20 @@ export default function CriarPedido() {
         .insert(itemsToInsert);
 
       if (itemsError) throw itemsError;
+
+      // Log order creation
+      await logOrderChange(
+        order.id,
+        "created",
+        {
+          customer_email: { old: null, new: email },
+          total: { old: null, new: calculateTotal() },
+          items_count: { old: null, new: orderItems.length },
+        },
+        user?.id,
+        user?.email,
+        contato || user?.email
+      );
 
       toast.success("Pedido criado com sucesso!");
       
