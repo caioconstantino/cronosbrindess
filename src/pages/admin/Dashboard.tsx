@@ -7,13 +7,14 @@ import { Package, ShoppingCart, Users, Layers, DollarSign, TrendingUp } from "lu
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend } from "recharts";
-import { format, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear, subYears } from "date-fns";
+import { format, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear, subYears, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 type PeriodFilter = "last6months" | "last12months" | "thisYear" | "lastYear" | "all";
 
 interface MonthlySales {
   month: string;
+  monthKey: string; // yyyy-MM format for filtering
   total: number;
   orders: number;
 }
@@ -46,20 +47,21 @@ export default function Dashboard() {
 
   const getDateRange = () => {
     const now = new Date();
+    const endOfToday = endOfDay(now); // Use end of day to include all orders from today
     switch (periodFilter) {
       case "last6months":
-        return { start: subMonths(now, 6), end: now };
+        return { start: subMonths(now, 6), end: endOfToday };
       case "last12months":
-        return { start: subMonths(now, 12), end: now };
+        return { start: subMonths(now, 12), end: endOfToday };
       case "thisYear":
         return { start: startOfYear(now), end: endOfYear(now) };
       case "lastYear":
         const lastYear = subYears(now, 1);
         return { start: startOfYear(lastYear), end: endOfYear(lastYear) };
       case "all":
-        return { start: new Date(2020, 0, 1), end: now };
+        return { start: new Date(2020, 0, 1), end: endOfToday };
       default:
-        return { start: subMonths(now, 6), end: now };
+        return { start: subMonths(now, 6), end: endOfToday };
     }
   };
 
@@ -83,11 +85,11 @@ export default function Dashboard() {
   const loadSalesData = async () => {
     const { start, end } = getDateRange();
     
-    // Fetch completed orders within the period
+    // Fetch sold orders within the period (only "sold" counts as finalized/paid)
     const { data: orders, error } = await supabase
       .from("orders")
       .select("id, total, created_at, status")
-      .eq("status", "completed")
+      .eq("status", "sold")
       .gte("created_at", start.toISOString())
       .lte("created_at", end.toISOString());
 
@@ -125,12 +127,13 @@ export default function Dashboard() {
     const salesArray: MonthlySales[] = Object.entries(monthlyData)
       .map(([key, value]) => ({
         month: format(new Date(key + "-01"), "MMM/yy", { locale: ptBR }),
+        monthKey: key, // Keep yyyy-MM format for navigation
         total: value.total,
         orders: value.orders,
       }))
       .sort((a, b) => {
-        const dateA = new Date(a.month);
-        const dateB = new Date(b.month);
+        const dateA = new Date(a.monthKey + "-01");
+        const dateB = new Date(b.monthKey + "-01");
         return dateA.getTime() - dateB.getTime();
       });
 
@@ -221,7 +224,7 @@ export default function Dashboard() {
 
         <Card className="bg-primary/5 border-primary/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pedidos Concluídos</CardTitle>
+            <CardTitle className="text-sm font-medium">Pedidos Vendidos</CardTitle>
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -237,7 +240,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatCurrency(totalSold)}</div>
-            <p className="text-xs text-muted-foreground">Pedidos concluídos</p>
+            <p className="text-xs text-muted-foreground">Pedidos vendidos</p>
           </CardContent>
         </Card>
       </div>
@@ -276,6 +279,12 @@ export default function Dashboard() {
                     fill="hsl(var(--primary))" 
                     radius={[4, 4, 0, 0]}
                     name="Total Vendido"
+                    className="cursor-pointer"
+                    onClick={(data) => {
+                      if (data && data.monthKey) {
+                        navigate(`/admin/pedidos?month=${data.monthKey}`);
+                      }
+                    }}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -313,7 +322,7 @@ export default function Dashboard() {
                     stroke="hsl(var(--primary))" 
                     strokeWidth={2}
                     dot={{ fill: "hsl(var(--primary))" }}
-                    name="Pedidos Concluídos"
+                    name="Pedidos Vendidos"
                   />
                 </LineChart>
               </ResponsiveContainer>

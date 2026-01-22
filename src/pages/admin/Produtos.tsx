@@ -256,7 +256,24 @@ export default function ProdutosNew() {
   };
 
   // Opções padrão da variante "Gravação"
-  const defaultGravingOptions = ["SILK", "LASER", "DIGITAL", "TRANSFER", "LASER CO2", "DTF", "TRANSFER CILINDRICO", "PELICULA", "DIGITAL 360"];
+  const defaultGravingOptions = [
+    "SILK", 
+    "LASER", 
+    "DIGITAL", 
+    "TRANSFER", 
+    "LASER CO2", 
+    "DTF", 
+    "TRANSFER CILINDRICO", 
+    "PELICULA", 
+    "DIGITAL 360",
+    "ETIQUETA ADESIVA",
+    "ETIQUETA RESINADA",
+    "IMOD LABEL",
+    "TAMPOGRAFIA",
+    "BORDADO",
+    "SUBLIMAÇÃO",
+    "BAIXO RELEVO"
+  ];
 
   // Função para garantir que a variante padrão "Gravação" existe
   const ensureDefaultVariant = async (productId: string) => {

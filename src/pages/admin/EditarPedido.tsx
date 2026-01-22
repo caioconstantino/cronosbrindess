@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,15 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ArrowLeft, Download, Mail, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, Download, Mail, Trash2, Plus, Lock } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import jsPDF from "jspdf";
 import logoImage from "@/assets/logo-cronos.png";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useRef } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
+import OrderAuditLog from "@/components/OrderAuditLog";
+import { logOrderChange, detectChanges } from "@/hooks/useOrderAudit";
 
 type OrderItem = {
   id: string;
@@ -90,6 +92,9 @@ export default function EditarPedido() {
   const [customItemPrice, setCustomItemPrice] = useState<number>(0);
   const [customItemQuantity, setCustomItemQuantity] = useState<number>(1);
   const [customItemImage, setCustomItemImage] = useState("");
+  const [auditRefreshTrigger, setAuditRefreshTrigger] = useState(0);
+  const [originalOrder, setOriginalOrder] = useState<any>(null);
+  const [originalItems, setOriginalItems] = useState<OrderItem[]>([]);
   // Estados para edição de dados do cliente
   const [customerEmpresa, setCustomerEmpresa] = useState("");
   const [customerContato, setCustomerContato] = useState("");
@@ -105,6 +110,10 @@ export default function EditarPedido() {
   const { user, isAdmin, isVendedor, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const productSearchRef = useRef<HTMLDivElement>(null);
+
+  // Check if order is sold and user is not admin - prevent editing
+  const isSoldOrder = order?.status === "sold";
+  const isReadOnly = isSoldOrder && !isAdmin;
 
   useEffect(() => {
     if (authLoading) return;
@@ -156,7 +165,7 @@ export default function EditarPedido() {
 
     if (orderError || !orderData) {
       toast.error("Erro ao carregar pedido");
-      navigate("/admin/pedidos");
+      navigate(isAdmin ? "/admin/pedidos" : "/vendedor/pedidos");
       return;
     }
 
@@ -194,11 +203,14 @@ export default function EditarPedido() {
       }
     }
 
-    setOrder({
+    const orderWithRelations = {
       ...orderData,
       profiles: profileData,
       salesperson: salespersonData,
-    });
+    };
+    
+    setOrder(orderWithRelations);
+    setOriginalOrder({ ...orderData });
 
     // Initialize customer data states for editing
     if (profileData) {
@@ -242,6 +254,7 @@ export default function EditarPedido() {
       toast.error("Erro ao carregar itens do pedido");
     } else if (itemsData) {
     setItems(itemsData as any);
+      setOriginalItems(JSON.parse(JSON.stringify(itemsData)) as OrderItem[]);
       // Load variants for each product in the order items
       const uniqueProductIds = Array.from(new Set((itemsData || []).map((i: any) => i.product_id).filter(Boolean)));
       for (const pid of uniqueProductIds) {
@@ -328,6 +341,8 @@ export default function EditarPedido() {
   const removeItem = async (itemId: string) => {
     if (!confirm("Deseja realmente remover este item?")) return;
 
+    const removedItem = items.find(item => item.id === itemId);
+    
     const { error } = await supabase
       .from("order_items")
       .delete()
@@ -336,6 +351,23 @@ export default function EditarPedido() {
     if (error) {
       toast.error("Erro ao remover item");
       return;
+    }
+
+    // Log the removal
+    if (id && removedItem) {
+      await logOrderChange(
+        id,
+        "item_removed",
+        {
+          product_name: { old: removedItem.products?.name || removedItem.custom_name || "Item", new: null },
+          quantity: { old: removedItem.quantity, new: null },
+          price: { old: removedItem.price, new: null },
+        },
+        user?.id,
+        user?.email,
+        order?.profiles?.contato || user?.email
+      );
+      setAuditRefreshTrigger(prev => prev + 1);
     }
 
     setItems(items.filter(item => item.id !== itemId));
@@ -378,6 +410,21 @@ export default function EditarPedido() {
 
     if (data) {
       setItems([...items, data as any]);
+      
+      // Log item addition
+      await logOrderChange(
+        id,
+        "item_added",
+        {
+          product_name: { old: null, new: selectedProduct.name },
+          quantity: { old: null, new: newItemQuantity },
+        },
+        user?.id,
+        user?.email,
+        order?.profiles?.contato || user?.email
+      );
+      setAuditRefreshTrigger(prev => prev + 1);
+      
       setSelectedProduct(null);
       setProductSearch("");
       setNewItemQuantity(1);
@@ -425,6 +472,22 @@ export default function EditarPedido() {
 
     if (data) {
       setItems([...items, data as any]);
+      
+      // Log custom item addition
+      await logOrderChange(
+        id,
+        "item_added",
+        {
+          product_name: { old: null, new: customItemName },
+          quantity: { old: null, new: customItemQuantity },
+          price: { old: null, new: customItemPrice },
+        },
+        user?.id,
+        user?.email,
+        order?.profiles?.contato || user?.email
+      );
+      setAuditRefreshTrigger(prev => prev + 1);
+      
       setCustomItemDialogOpen(false);
       setCustomItemName("");
       setCustomItemPrice(0);
@@ -496,6 +559,12 @@ export default function EditarPedido() {
   const saveOrder = async () => {
     if (!id || !order) return;
 
+    // Prevent non-admins from editing sold orders
+    if (isReadOnly) {
+      toast.error("Pedidos vendidos não podem ser alterados");
+      return;
+    }
+
     // Save customer data first
     const customerSaved = await saveCustomerData();
     if (!customerSaved) {
@@ -503,18 +572,26 @@ export default function EditarPedido() {
     }
 
     const total = calculateTotal();
+    const newOrderData = {
+      total,
+      payment_terms: order.payment_terms,
+      delivery_terms: order.delivery_terms,
+      validity_terms: order.validity_terms,
+      shipping_cost: order.shipping_cost || 0,
+      shipping_type: (order as any).shipping_type || "CIF"
+    };
+
+    // Detect changes in order data
+    const orderChanges = detectChanges(
+      originalOrder || {},
+      { ...order, total },
+      ["total", "payment_terms", "delivery_terms", "validity_terms", "shipping_cost", "status"]
+    );
 
     // Update order total and terms
     const { error: orderError } = await supabase
       .from("orders")
-      .update({ 
-        total,
-        payment_terms: order.payment_terms,
-        delivery_terms: order.delivery_terms,
-        validity_terms: order.validity_terms,
-        shipping_cost: order.shipping_cost || 0,
-        shipping_type: (order as any).shipping_type || "CIF"
-      })
+      .update(newOrderData)
       .eq("id", id);
 
     if (orderError) {
@@ -522,8 +599,37 @@ export default function EditarPedido() {
       return;
     }
 
+    // Track item changes
+    const itemChanges: Record<string, { old: any; new: any }> = {};
+
     // Update each item price and quantity
     for (const item of items) {
+      const originalItem = originalItems.find(oi => oi.id === item.id);
+      
+      // Check for item-level changes
+      if (originalItem) {
+        if (originalItem.quantity !== item.quantity) {
+          itemChanges[`${item.products?.name || item.custom_name || 'Item'} - Quantidade`] = {
+            old: originalItem.quantity,
+            new: item.quantity
+          };
+        }
+        if (originalItem.price !== item.price) {
+          itemChanges[`${item.products?.name || item.custom_name || 'Item'} - Preço`] = {
+            old: originalItem.price,
+            new: item.price
+          };
+        }
+        const oldVariants = JSON.stringify(originalItem.selected_variants || {});
+        const newVariants = JSON.stringify(item.selected_variants || {});
+        if (oldVariants !== newVariants) {
+          itemChanges[`${item.products?.name || item.custom_name || 'Item'} - Variantes`] = {
+            old: originalItem.selected_variants || {},
+            new: item.selected_variants || {}
+          };
+        }
+      }
+
       const { error: itemError } = await supabase
         .from("order_items")
         .update({ 
@@ -539,8 +645,21 @@ export default function EditarPedido() {
       }
     }
 
+    // Log all changes
+    const allChanges = { ...orderChanges, ...itemChanges };
+    if (Object.keys(allChanges).length > 0) {
+      await logOrderChange(
+        id,
+        "updated",
+        allChanges,
+        user?.id,
+        user?.email,
+        order?.profiles?.contato || user?.email
+      );
+    }
+
     toast.success("Pedido atualizado com sucesso!");
-    navigate("/admin/pedidos");
+    navigate(isAdmin ? "/admin/pedidos" : "/vendedor/pedidos");
   };
 
   const generatePDF = async (download = true) => {
@@ -1153,11 +1272,22 @@ export default function EditarPedido() {
             <Mail className="h-4 w-4" />
             Enviar por Email
           </Button>
-          <Button onClick={saveOrder}>
-            Salvar Alterações
+          <Button onClick={saveOrder} disabled={isReadOnly}>
+            {isReadOnly ? "Bloqueado" : "Salvar Alterações"}
           </Button>
         </div>
       </div>
+
+      {/* Read-only warning for sold orders */}
+      {isReadOnly && (
+        <Alert variant="destructive" className="border-orange-500 bg-orange-50 text-orange-800">
+          <Lock className="h-4 w-4" />
+          <AlertDescription>
+            Este pedido foi marcado como <strong>Vendido</strong> e não pode mais ser alterado. 
+            Somente administradores podem fazer modificações em pedidos vendidos.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>
@@ -1172,6 +1302,7 @@ export default function EditarPedido() {
                 value={customerEmpresa}
                 onChange={(e) => setCustomerEmpresa(e.target.value)}
                 placeholder="Nome da empresa"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1181,6 +1312,7 @@ export default function EditarPedido() {
                 value={customerContato}
                 onChange={(e) => setCustomerContato(e.target.value)}
                 placeholder="Nome do contato"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1192,6 +1324,7 @@ export default function EditarPedido() {
                 onChange={(e) => setCustomerEmail(e.target.value)}
                 placeholder="email@exemplo.com"
                 required
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1201,6 +1334,7 @@ export default function EditarPedido() {
                 value={customerTelefone}
                 onChange={(e) => setCustomerTelefone(e.target.value)}
                 placeholder="(11) 99999-9999"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1210,6 +1344,7 @@ export default function EditarPedido() {
                 value={customerCpfCnpj}
                 onChange={(e) => setCustomerCpfCnpj(e.target.value)}
                 placeholder="000.000.000-00"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1219,6 +1354,7 @@ export default function EditarPedido() {
                 value={customerCep}
                 onChange={(e) => setCustomerCep(e.target.value)}
                 placeholder="00000-000"
+                disabled={isReadOnly}
               />
             </div>
           </div>
@@ -1230,6 +1366,7 @@ export default function EditarPedido() {
                 value={customerEndereco}
                 onChange={(e) => setCustomerEndereco(e.target.value)}
                 placeholder="Rua, Avenida..."
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1239,6 +1376,7 @@ export default function EditarPedido() {
                 value={customerNumero}
                 onChange={(e) => setCustomerNumero(e.target.value)}
                 placeholder="123"
+                disabled={isReadOnly}
               />
             </div>
           </div>
@@ -1250,6 +1388,7 @@ export default function EditarPedido() {
                 value={customerComplemento}
                 onChange={(e) => setCustomerComplemento(e.target.value)}
                 placeholder="Apto, Sala..."
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1259,6 +1398,7 @@ export default function EditarPedido() {
                 value={customerCidade}
                 onChange={(e) => setCustomerCidade(e.target.value)}
                 placeholder="São Paulo"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1269,6 +1409,7 @@ export default function EditarPedido() {
                 onChange={(e) => setCustomerEstado(e.target.value)}
                 placeholder="SP"
                 maxLength={2}
+                disabled={isReadOnly}
               />
             </div>
           </div>
@@ -1301,6 +1442,7 @@ export default function EditarPedido() {
               value={order.payment_terms || ""}
               onChange={(e) => setOrder({ ...order, payment_terms: e.target.value })}
               placeholder="21 DDL, CONTADOS A PARTIR DA EMISSÃO DA NF DE VENDA."
+              disabled={isReadOnly}
             />
           </div>
           <div>
@@ -1309,6 +1451,7 @@ export default function EditarPedido() {
               value={order.delivery_terms || ""}
               onChange={(e) => setOrder({ ...order, delivery_terms: e.target.value })}
               placeholder="A COMBINAR"
+              disabled={isReadOnly}
             />
           </div>
           <div>
@@ -1317,6 +1460,7 @@ export default function EditarPedido() {
               value={order.validity_terms || ""}
               onChange={(e) => setOrder({ ...order, validity_terms: e.target.value })}
               placeholder="10 DIAS - SUJEITO A CONFIRMAÇÃO DE ESTOQUE NO ATO DA FORMALIZAÇÃO DA COMPRA."
+              disabled={isReadOnly}
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1328,6 +1472,7 @@ export default function EditarPedido() {
                 value={order.shipping_cost || 0}
                 onChange={(e) => setOrder({ ...order, shipping_cost: parseFloat(e.target.value) || 0 })}
                 placeholder="0.00"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -1335,6 +1480,7 @@ export default function EditarPedido() {
               <Select
                 value={(order as any).shipping_type || "CIF"}
                 onValueChange={(value) => setOrder({ ...order, shipping_type: value } as any)}
+                disabled={isReadOnly}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
@@ -1422,6 +1568,7 @@ export default function EditarPedido() {
                         }
                       }}
                       className="w-24"
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div>
@@ -1439,6 +1586,7 @@ export default function EditarPedido() {
                       }}
                       className="w-32"
                       placeholder="0.00"
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div className="text-right min-w-[100px]">
@@ -1452,6 +1600,7 @@ export default function EditarPedido() {
                     size="icon"
                     onClick={() => removeItem(item.id)}
                     className="text-destructive hover:text-destructive"
+                    disabled={isReadOnly}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -1554,6 +1703,11 @@ export default function EditarPedido() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Audit Log */}
+      {id && (
+        <OrderAuditLog orderId={id} refreshTrigger={auditRefreshTrigger} />
+      )}
     </div>
   );
 }
