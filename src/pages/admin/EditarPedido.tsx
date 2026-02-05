@@ -936,6 +936,21 @@ export default function EditarPedido() {
     pdf.text(validityText, margin, y + 5);
     y += 5 + (validityText.length * 5) + 10;
 
+    // Notes/Observations
+    if (order.notes && order.notes.trim()) {
+      if (y > 240) {
+        pdf.addPage();
+        y = await addHeader();
+      }
+      
+      pdf.setFont("helvetica", "bold");
+      pdf.text("OBSERVAÇÕES:", margin, y);
+      pdf.setFont("helvetica", "normal");
+      const notesText = pdf.splitTextToSize(order.notes, pageWidth - 2 * margin);
+      pdf.text(notesText, margin, y + 5);
+      y += 5 + (notesText.length * 5) + 10;
+    }
+
     // Legal terms
     if (y > 200) {
       pdf.addPage();
