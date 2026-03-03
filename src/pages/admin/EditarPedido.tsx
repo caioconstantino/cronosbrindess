@@ -752,6 +752,11 @@ export default function EditarPedido() {
       pdf.text(`Telefone: ${order.profiles.telefone || ""}`, margin + 80, y);
       y += 5;
       
+      if (order.profiles.cpf_cnpj) {
+        pdf.text(`CPF/CNPJ: ${order.profiles.cpf_cnpj}`, margin, y);
+        y += 5;
+      }
+      
       // Contact preference
       if (order.contact_preference) {
         const preferenceMap: Record<string, string> = {
@@ -763,11 +768,20 @@ export default function EditarPedido() {
         y += 5;
       }
       
-      if (order.profiles.endereco) {
-        pdf.text(`Endereço: ${order.profiles.endereco}, ${order.profiles.numero || ""}`, margin, y);
-        y += 5;
-        pdf.text(`${order.profiles.cidade || ""} - ${order.profiles.estado || ""} - CEP: ${order.profiles.cep || ""}`, margin, y);
-        y += 5;
+      const enderecoparts = [order.profiles.endereco, order.profiles.numero].filter(Boolean).join(", ");
+      const complemento = order.profiles.complemento ? ` - ${order.profiles.complemento}` : "";
+      const cidadeEstado = [order.profiles.cidade, order.profiles.estado].filter(Boolean).join(" - ");
+      const cep = order.profiles.cep ? `CEP: ${order.profiles.cep}` : "";
+      
+      if (enderecoparts || cidadeEstado || cep) {
+        if (enderecoparts) {
+          pdf.text(`Endereço: ${enderecoparts}${complemento}`, margin, y);
+          y += 5;
+        }
+        if (cidadeEstado || cep) {
+          pdf.text([cidadeEstado, cep].filter(Boolean).join(" - "), margin, y);
+          y += 5;
+        }
       }
     }
 
