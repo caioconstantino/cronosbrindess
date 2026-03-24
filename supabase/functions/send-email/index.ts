@@ -173,6 +173,7 @@ const handler = async (req: Request): Promise<Response> => {
       order_id: orderId || null,
       sent_by: senderId || null,
       sent_by_name: senderName || null,
+      body_html: html || null,
     });
 
     return new Response(
