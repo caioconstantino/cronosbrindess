@@ -598,6 +598,8 @@ export type Database = {
       }
       sent_email_logs: {
         Row: {
+          attachment_url: string | null
+          body_html: string | null
           created_at: string
           error_message: string | null
           id: string
@@ -609,6 +611,8 @@ export type Database = {
           subject: string
         }
         Insert: {
+          attachment_url?: string | null
+          body_html?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -620,6 +624,8 @@ export type Database = {
           subject: string
         }
         Update: {
+          attachment_url?: string | null
+          body_html?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
