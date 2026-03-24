@@ -21,6 +21,41 @@ interface EmailRequest {
   }>;
 }
 
+interface SmtpConfig {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+}
+
+async function getSmtpConfig(supabase: any): Promise<SmtpConfig> {
+  // Try to read from email_settings table first
+  const { data } = await supabase
+    .from('email_settings')
+    .select('smtp_host, smtp_port, smtp_user, smtp_password')
+    .limit(1)
+    .maybeSingle();
+
+  if (data?.smtp_host && data?.smtp_user && data?.smtp_password) {
+    console.log('Using SMTP config from database');
+    return {
+      host: data.smtp_host,
+      port: data.smtp_port || 465,
+      user: data.smtp_user,
+      password: data.smtp_password,
+    };
+  }
+
+  // Fallback to environment variables
+  console.log('Using SMTP config from environment variables');
+  return {
+    host: Deno.env.get('SMTP_HOST') || '',
+    port: parseInt(Deno.env.get('SMTP_PORT') || '465'),
+    user: Deno.env.get('SMTP_USER') || '',
+    password: Deno.env.get('SMTP_PASSWORD') || '',
+  };
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -44,22 +79,28 @@ const handler = async (req: Request): Promise<Response> => {
   const { to, subject, html, orderId, senderName, senderId, attachments } = emailData;
 
   try {
-    console.log('Sending email to:', to);
+    const smtpConfig = await getSmtpConfig(supabase);
+
+    if (!smtpConfig.host || !smtpConfig.user || !smtpConfig.password) {
+      throw new Error('SMTP não configurado. Acesse Configurações > Email para configurar.');
+    }
+
+    console.log('Sending email to:', to, 'via', smtpConfig.host);
 
     const client = new SMTPClient({
       connection: {
-        hostname: Deno.env.get('SMTP_HOST') || '',
-        port: parseInt(Deno.env.get('SMTP_PORT') || '465'),
+        hostname: smtpConfig.host,
+        port: smtpConfig.port,
         tls: true,
         auth: {
-          username: Deno.env.get('SMTP_USER') || '',
-          password: Deno.env.get('SMTP_PASSWORD') || '',
+          username: smtpConfig.user,
+          password: smtpConfig.password,
         },
       },
     });
 
     const emailConfig: any = {
-      from: Deno.env.get('SMTP_USER') || '',
+      from: smtpConfig.user,
       to: to,
       subject: subject,
       content: 'text/html',
@@ -87,7 +128,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Email sent successfully to:', to);
 
-    // Log success
     await supabase.from('sent_email_logs').insert({
       recipient_email: to,
       subject: subject,
@@ -104,7 +144,6 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error('Error sending email:', error);
 
-    // Log failure
     await supabase.from('sent_email_logs').insert({
       recipient_email: to,
       subject: subject,
