@@ -189,7 +189,7 @@ export default function Pedidos() {
             body: {
               to: orderData.customer_email,
               subject: `Atualização do Orçamento #${orderData.order_number}`,
-              orderId: orderData.id,
+              orderId: orderId,
               html: `
                 <h2>Atualização do Seu Orçamento</h2>
                 <p>Olá${order?.profiles?.contato ? ` ${order.profiles.contato}` : ''},</p>
