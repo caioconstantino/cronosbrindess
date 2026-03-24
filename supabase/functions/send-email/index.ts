@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.79.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,22 +11,39 @@ interface EmailRequest {
   to: string;
   subject: string;
   html: string;
+  orderId?: string;
+  senderName?: string;
+  senderId?: string;
   attachments?: Array<{
     filename: string;
-    content: string; // base64
+    content: string;
     contentType: string;
   }>;
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const { to, subject, html, attachments }: EmailRequest = await req.json();
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+  let emailData: EmailRequest;
+
+  try {
+    emailData = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid request body' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
+
+  const { to, subject, html, orderId, senderName, senderId, attachments } = emailData;
+
+  try {
     console.log('Sending email to:', to);
 
     const client = new SMTPClient({
@@ -48,21 +66,14 @@ const handler = async (req: Request): Promise<Response> => {
       html: html,
     };
 
-    // Add attachments if provided
     if (attachments && attachments.length > 0) {
       console.log('Processing attachments:', attachments.length);
       emailConfig.attachments = attachments.map(att => {
-        console.log('Attachment:', att.filename, 'Base64 length:', att.content.length);
-        
-        // Decode base64 properly for binary data
         const binaryString = atob(att.content);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i);
         }
-        
-        console.log('Decoded bytes length:', bytes.length);
-        
         return {
           filename: att.filename,
           content: bytes,
@@ -72,20 +83,38 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     await client.send(emailConfig);
-
     await client.close();
 
     console.log('Email sent successfully to:', to);
 
+    // Log success
+    await supabase.from('sent_email_logs').insert({
+      recipient_email: to,
+      subject: subject,
+      status: 'sent',
+      order_id: orderId || null,
+      sent_by: senderId || null,
+      sent_by_name: senderName || null,
+    });
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        ...corsHeaders,
-      },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   } catch (error: any) {
     console.error('Error sending email:', error);
+
+    // Log failure
+    await supabase.from('sent_email_logs').insert({
+      recipient_email: to,
+      subject: subject,
+      status: 'failed',
+      error_message: error.message,
+      order_id: orderId || null,
+      sent_by: senderId || null,
+      sent_by_name: senderName || null,
+    });
+
     return new Response(
       JSON.stringify({ error: error.message }),
       {

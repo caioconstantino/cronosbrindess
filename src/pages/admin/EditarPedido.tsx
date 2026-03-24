@@ -1119,6 +1119,9 @@ export default function EditarPedido() {
         body: {
           to: emailTo,
           subject: `Orçamento #${order.order_number} - Cronos Brindes`,
+          orderId: order.id,
+          senderId: user?.id,
+          senderName: user?.email,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <h2 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">

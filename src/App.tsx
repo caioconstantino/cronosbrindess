@@ -24,6 +24,7 @@ import Usuarios from "./pages/admin/Usuarios";
 import Permissoes from "./pages/admin/Permissoes";
 import EmailSettings from "./pages/admin/EmailSettings";
 import EmailTemplates from "./pages/admin/EmailTemplates";
+import EmailLogs from "./pages/admin/EmailLogs";
 import VendedorLayout from "./pages/vendedor/VendedorLayout";
 import VendedorClientes from "./pages/vendedor/VendedorClientes";
 import VendedorPedidos from "./pages/vendedor/VendedorPedidos";
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="configuracoes/email" element={<EmailSettings />} />
             <Route path="configuracoes/email/templates" element={<EmailTemplates />} />
             <Route path="configuracoes/permissoes" element={<Permissoes />} />
+            <Route path="configuracoes/email/logs" element={<EmailLogs />} />
           </Route>
           <Route path="/vendedor" element={<VendedorLayout />}>
             <Route index element={<VendedorClientes />} />
