@@ -61,6 +61,7 @@ const App = () => (
             <Route path="configuracoes/email" element={<EmailSettings />} />
             <Route path="configuracoes/email/templates" element={<EmailTemplates />} />
             <Route path="configuracoes/permissoes" element={<Permissoes />} />
+            <Route path="configuracoes/email/logs" element={<EmailLogs />} />
           </Route>
           <Route path="/vendedor" element={<VendedorLayout />}>
             <Route index element={<VendedorClientes />} />
