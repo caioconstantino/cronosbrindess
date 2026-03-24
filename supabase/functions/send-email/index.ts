@@ -128,6 +128,25 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Email sent successfully to:', to);
 
+    // Build attachment URL if there's an order PDF
+    let attachmentUrl: string | null = null;
+    if (orderId) {
+      // Try to get the PDF URL from the order-pdfs bucket
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('order_number')
+        .eq('id', orderId)
+        .maybeSingle();
+      if (orderData?.order_number) {
+        const { data: signedData } = await supabase.storage
+          .from('order-pdfs')
+          .createSignedUrl(`${orderData.order_number}.pdf`, 60 * 60 * 24 * 7);
+        if (signedData?.signedUrl) {
+          attachmentUrl = signedData.signedUrl;
+        }
+      }
+    }
+
     await supabase.from('sent_email_logs').insert({
       recipient_email: to,
       subject: subject,
@@ -135,6 +154,8 @@ const handler = async (req: Request): Promise<Response> => {
       order_id: orderId || null,
       sent_by: senderId || null,
       sent_by_name: senderName || null,
+      body_html: html || null,
+      attachment_url: attachmentUrl,
     });
 
     return new Response(JSON.stringify({ success: true }), {
