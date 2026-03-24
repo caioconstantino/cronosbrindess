@@ -123,18 +123,30 @@ export type Database = {
           admin_email: string
           created_at: string
           id: string
+          smtp_host: string | null
+          smtp_password: string | null
+          smtp_port: number | null
+          smtp_user: string | null
           updated_at: string
         }
         Insert: {
           admin_email: string
           created_at?: string
           id?: string
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
           updated_at?: string
         }
         Update: {
           admin_email?: string
           created_at?: string
           id?: string
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
           updated_at?: string
         }
         Relationships: []
