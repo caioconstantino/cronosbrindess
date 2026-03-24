@@ -24,6 +24,7 @@ import Usuarios from "./pages/admin/Usuarios";
 import Permissoes from "./pages/admin/Permissoes";
 import EmailSettings from "./pages/admin/EmailSettings";
 import EmailTemplates from "./pages/admin/EmailTemplates";
+import EmailLogs from "./pages/admin/EmailLogs";
 import VendedorLayout from "./pages/vendedor/VendedorLayout";
 import VendedorClientes from "./pages/vendedor/VendedorClientes";
 import VendedorPedidos from "./pages/vendedor/VendedorPedidos";
