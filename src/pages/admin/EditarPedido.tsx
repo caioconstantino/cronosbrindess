@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ArrowLeft, Download, Mail, Trash2, Plus, Lock } from "lucide-react";
+import { ArrowLeft, Download, Mail, Trash2, Plus, Lock, Search, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import jsPDF from "jspdf";
 import logoImage from "@/assets/logo-cronos.png";
@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUpload } from "@/components/ImageUpload";
 import OrderAuditLog from "@/components/OrderAuditLog";
 import { logOrderChange, detectChanges } from "@/hooks/useOrderAudit";
+import { useCnpjLookup } from "@/hooks/useCnpjLookup";
 
 type OrderItem = {
   id: string;
@@ -110,6 +111,23 @@ export default function EditarPedido() {
   const { user, isAdmin, isVendedor, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const productSearchRef = useRef<HTMLDivElement>(null);
+  const { buscarCnpj, searching: searchingCnpj } = useCnpjLookup();
+
+  const handleBuscarCnpj = async () => {
+    const data = await buscarCnpj(customerCpfCnpj);
+    if (data) {
+      if (data.empresa) setCustomerEmpresa(data.empresa);
+      if (data.email) setCustomerEmail(data.email);
+      if (data.telefone) setCustomerTelefone(data.telefone);
+      if (data.cep) setCustomerCep(data.cep);
+      if (data.endereco) setCustomerEndereco(data.endereco);
+      if (data.numero) setCustomerNumero(data.numero);
+      if (data.complemento) setCustomerComplemento(data.complemento);
+      if (data.cidade) setCustomerCidade(data.cidade);
+      if (data.estado) setCustomerEstado(data.estado);
+      if (data.cnpj_formatado) setCustomerCpfCnpj(data.cnpj_formatado);
+    }
+  };
 
   // Check if order is sold and user is not admin - prevent editing
   const isSoldOrder = order?.status === "sold";
@@ -1371,13 +1389,25 @@ export default function EditarPedido() {
             </div>
             <div>
               <Label htmlFor="customer-cpf-cnpj">CPF/CNPJ</Label>
-              <Input
-                id="customer-cpf-cnpj"
-                value={customerCpfCnpj}
-                onChange={(e) => setCustomerCpfCnpj(e.target.value)}
-                placeholder="000.000.000-00"
-                disabled={isReadOnly}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="customer-cpf-cnpj"
+                  value={customerCpfCnpj}
+                  onChange={(e) => setCustomerCpfCnpj(e.target.value)}
+                  placeholder="000.000.000-00"
+                  disabled={isReadOnly}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleBuscarCnpj}
+                  disabled={searchingCnpj || !customerCpfCnpj || isReadOnly}
+                  title="Buscar CNPJ"
+                >
+                  {searchingCnpj ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
             <div>
               <Label htmlFor="customer-cep">CEP</Label>

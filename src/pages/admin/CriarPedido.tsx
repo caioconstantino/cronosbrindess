@@ -9,9 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Search, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { logOrderChange } from "@/hooks/useOrderAudit";
+import { useCnpjLookup } from "@/hooks/useCnpjLookup";
 
 type Product = {
   id: string;
@@ -69,6 +70,23 @@ export default function CriarPedido() {
   const [productSearch, setProductSearch] = useState("");
   const [isProductSearchOpen, setIsProductSearchOpen] = useState(false);
   const productSearchRef = useRef<HTMLDivElement>(null);
+  const { buscarCnpj, searching: searchingCnpj } = useCnpjLookup();
+
+  const handleBuscarCnpj = async () => {
+    const data = await buscarCnpj(cpfCnpj);
+    if (data) {
+      if (data.empresa) setEmpresa(data.empresa);
+      if (data.email) setEmail(data.email);
+      if (data.telefone) setTelefone(data.telefone);
+      if (data.cep) setCep(data.cep);
+      if (data.endereco) setEndereco(data.endereco);
+      if (data.numero) setNumero(data.numero);
+      if (data.complemento) setComplemento(data.complemento);
+      if (data.cidade) setCidade(data.cidade);
+      if (data.estado) setEstado(data.estado);
+      if (data.cnpj_formatado) setCpfCnpj(data.cnpj_formatado);
+    }
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -380,12 +398,24 @@ export default function CriarPedido() {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
-                <Input
-                  id="cpf_cnpj"
-                  value={cpfCnpj}
-                  onChange={(e) => setCpfCnpj(e.target.value)}
-                  placeholder="000.000.000-00"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="cpf_cnpj"
+                    value={cpfCnpj}
+                    onChange={(e) => setCpfCnpj(e.target.value)}
+                    placeholder="000.000.000-00"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleBuscarCnpj}
+                    disabled={searchingCnpj || !cpfCnpj}
+                    title="Buscar CNPJ"
+                  >
+                    {searchingCnpj ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
               <div>
                 <Label htmlFor="cep">CEP</Label>

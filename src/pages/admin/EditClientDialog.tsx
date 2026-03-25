@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Search, Loader2 } from "lucide-react";
+import { useCnpjLookup } from "@/hooks/useCnpjLookup";
 
 type Profile = {
   id: string;
@@ -51,6 +53,23 @@ export default function EditClientDialog({
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
   const [saving, setSaving] = useState(false);
+  const { buscarCnpj, searching } = useCnpjLookup();
+
+  const handleBuscarCnpj = async () => {
+    const data = await buscarCnpj(cpfCnpj);
+    if (data) {
+      if (data.empresa) setEmpresa(data.empresa);
+      if (data.email) setEmail(data.email);
+      if (data.telefone) setTelefone(data.telefone);
+      if (data.cep) setCep(data.cep);
+      if (data.endereco) setEndereco(data.endereco);
+      if (data.numero) setNumero(data.numero);
+      if (data.complemento) setComplemento(data.complemento);
+      if (data.cidade) setCidade(data.cidade);
+      if (data.estado) setEstado(data.estado);
+      if (data.cnpj_formatado) setCpfCnpj(data.cnpj_formatado);
+    }
+  };
 
   useEffect(() => {
     if (client) {
@@ -149,11 +168,23 @@ export default function EditClientDialog({
 
           <div>
             <Label>CPF/CNPJ</Label>
-            <Input
-              value={cpfCnpj}
-              onChange={(e) => setCpfCnpj(e.target.value)}
-              placeholder="00.000.000/0000-00"
-            />
+            <div className="flex gap-2">
+              <Input
+                value={cpfCnpj}
+                onChange={(e) => setCpfCnpj(e.target.value)}
+                placeholder="00.000.000/0000-00"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleBuscarCnpj}
+                disabled={searching || !cpfCnpj}
+                title="Buscar CNPJ"
+              >
+                {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
 
           <div>
