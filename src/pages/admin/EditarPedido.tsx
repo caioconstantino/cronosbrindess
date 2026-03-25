@@ -111,6 +111,23 @@ export default function EditarPedido() {
   const { user, isAdmin, isVendedor, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const productSearchRef = useRef<HTMLDivElement>(null);
+  const { buscarCnpj, searching: searchingCnpj } = useCnpjLookup();
+
+  const handleBuscarCnpj = async () => {
+    const data = await buscarCnpj(customerCpfCnpj);
+    if (data) {
+      if (data.empresa) setCustomerEmpresa(data.empresa);
+      if (data.email) setCustomerEmail(data.email);
+      if (data.telefone) setCustomerTelefone(data.telefone);
+      if (data.cep) setCustomerCep(data.cep);
+      if (data.endereco) setCustomerEndereco(data.endereco);
+      if (data.numero) setCustomerNumero(data.numero);
+      if (data.complemento) setCustomerComplemento(data.complemento);
+      if (data.cidade) setCustomerCidade(data.cidade);
+      if (data.estado) setCustomerEstado(data.estado);
+      if (data.cnpj_formatado) setCustomerCpfCnpj(data.cnpj_formatado);
+    }
+  };
 
   // Check if order is sold and user is not admin - prevent editing
   const isSoldOrder = order?.status === "sold";
