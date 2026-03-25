@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUpload } from "@/components/ImageUpload";
 import OrderAuditLog from "@/components/OrderAuditLog";
 import { logOrderChange, detectChanges } from "@/hooks/useOrderAudit";
+import { useCnpjLookup } from "@/hooks/useCnpjLookup";
 
 type OrderItem = {
   id: string;
