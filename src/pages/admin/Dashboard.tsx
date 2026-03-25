@@ -88,10 +88,11 @@ export default function Dashboard() {
     // Fetch sold orders within the period (only "sold" counts as finalized/paid)
     const { data: orders, error } = await supabase
       .from("orders")
-      .select("id, total, created_at, status")
+      .select("id, total, closed_at, status")
       .eq("status", "sold")
-      .gte("created_at", start.toISOString())
-      .lte("created_at", end.toISOString());
+      .not("closed_at", "is", null)
+      .gte("closed_at", start.toISOString())
+      .lte("closed_at", end.toISOString());
 
     if (error) {
       console.error("Error loading sales data:", error);
