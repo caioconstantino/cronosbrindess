@@ -398,12 +398,24 @@ export default function CriarPedido() {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
-                <Input
-                  id="cpf_cnpj"
-                  value={cpfCnpj}
-                  onChange={(e) => setCpfCnpj(e.target.value)}
-                  placeholder="000.000.000-00"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="cpf_cnpj"
+                    value={cpfCnpj}
+                    onChange={(e) => setCpfCnpj(e.target.value)}
+                    placeholder="000.000.000-00"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleBuscarCnpj}
+                    disabled={searchingCnpj || !cpfCnpj}
+                    title="Buscar CNPJ"
+                  >
+                    {searchingCnpj ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
               <div>
                 <Label htmlFor="cep">CEP</Label>
