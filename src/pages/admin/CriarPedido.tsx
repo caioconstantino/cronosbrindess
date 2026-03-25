@@ -70,6 +70,23 @@ export default function CriarPedido() {
   const [productSearch, setProductSearch] = useState("");
   const [isProductSearchOpen, setIsProductSearchOpen] = useState(false);
   const productSearchRef = useRef<HTMLDivElement>(null);
+  const { buscarCnpj, searching: searchingCnpj } = useCnpjLookup();
+
+  const handleBuscarCnpj = async () => {
+    const data = await buscarCnpj(cpfCnpj);
+    if (data) {
+      if (data.empresa) setEmpresa(data.empresa);
+      if (data.email) setEmail(data.email);
+      if (data.telefone) setTelefone(data.telefone);
+      if (data.cep) setCep(data.cep);
+      if (data.endereco) setEndereco(data.endereco);
+      if (data.numero) setNumero(data.numero);
+      if (data.complemento) setComplemento(data.complemento);
+      if (data.cidade) setCidade(data.cidade);
+      if (data.estado) setEstado(data.estado);
+      if (data.cnpj_formatado) setCpfCnpj(data.cnpj_formatado);
+    }
+  };
 
   useEffect(() => {
     if (authLoading) return;
