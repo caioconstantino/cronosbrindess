@@ -115,9 +115,9 @@ export default function Dashboard() {
       current = subMonths(current, -1);
     }
 
-    // Aggregate orders by month
+    // Aggregate orders by month (using closed_at)
     orders?.forEach((order) => {
-      const key = format(new Date(order.created_at), "yyyy-MM");
+      const key = format(new Date(order.closed_at!), "yyyy-MM");
       if (monthlyData[key]) {
         monthlyData[key].total += order.total || 0;
         monthlyData[key].orders += 1;
