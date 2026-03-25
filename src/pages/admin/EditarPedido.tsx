@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ArrowLeft, Download, Mail, Trash2, Plus, Lock } from "lucide-react";
+import { ArrowLeft, Download, Mail, Trash2, Plus, Lock, Search, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import jsPDF from "jspdf";
 import logoImage from "@/assets/logo-cronos.png";
