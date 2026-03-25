@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Search, Loader2 } from "lucide-react";
+import { useCnpjLookup } from "@/hooks/useCnpjLookup";
 
 type Profile = {
   id: string;
