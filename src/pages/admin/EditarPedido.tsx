@@ -1389,13 +1389,25 @@ export default function EditarPedido() {
             </div>
             <div>
               <Label htmlFor="customer-cpf-cnpj">CPF/CNPJ</Label>
-              <Input
-                id="customer-cpf-cnpj"
-                value={customerCpfCnpj}
-                onChange={(e) => setCustomerCpfCnpj(e.target.value)}
-                placeholder="000.000.000-00"
-                disabled={isReadOnly}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="customer-cpf-cnpj"
+                  value={customerCpfCnpj}
+                  onChange={(e) => setCustomerCpfCnpj(e.target.value)}
+                  placeholder="000.000.000-00"
+                  disabled={isReadOnly}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleBuscarCnpj}
+                  disabled={searchingCnpj || !customerCpfCnpj || isReadOnly}
+                  title="Buscar CNPJ"
+                >
+                  {searchingCnpj ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
             <div>
               <Label htmlFor="customer-cep">CEP</Label>
