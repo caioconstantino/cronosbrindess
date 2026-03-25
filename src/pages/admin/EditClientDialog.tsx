@@ -168,11 +168,23 @@ export default function EditClientDialog({
 
           <div>
             <Label>CPF/CNPJ</Label>
-            <Input
-              value={cpfCnpj}
-              onChange={(e) => setCpfCnpj(e.target.value)}
-              placeholder="00.000.000/0000-00"
-            />
+            <div className="flex gap-2">
+              <Input
+                value={cpfCnpj}
+                onChange={(e) => setCpfCnpj(e.target.value)}
+                placeholder="00.000.000/0000-00"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleBuscarCnpj}
+                disabled={searching || !cpfCnpj}
+                title="Buscar CNPJ"
+              >
+                {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
 
           <div>
