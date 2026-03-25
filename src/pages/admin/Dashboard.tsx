@@ -88,10 +88,11 @@ export default function Dashboard() {
     // Fetch sold orders within the period (only "sold" counts as finalized/paid)
     const { data: orders, error } = await supabase
       .from("orders")
-      .select("id, total, created_at, status")
+      .select("id, total, closed_at, status")
       .eq("status", "sold")
-      .gte("created_at", start.toISOString())
-      .lte("created_at", end.toISOString());
+      .not("closed_at", "is", null)
+      .gte("closed_at", start.toISOString())
+      .lte("closed_at", end.toISOString());
 
     if (error) {
       console.error("Error loading sales data:", error);
@@ -114,9 +115,9 @@ export default function Dashboard() {
       current = subMonths(current, -1);
     }
 
-    // Aggregate orders by month
+    // Aggregate orders by month (using closed_at)
     orders?.forEach((order) => {
-      const key = format(new Date(order.created_at), "yyyy-MM");
+      const key = format(new Date(order.closed_at!), "yyyy-MM");
       if (monthlyData[key]) {
         monthlyData[key].total += order.total || 0;
         monthlyData[key].orders += 1;

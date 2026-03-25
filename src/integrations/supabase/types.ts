@@ -275,6 +275,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          closed_at: string | null
           contact_preference: string | null
           created_at: string
           customer_email: string | null
@@ -292,6 +293,7 @@ export type Database = {
           validity_terms: string | null
         }
         Insert: {
+          closed_at?: string | null
           contact_preference?: string | null
           created_at?: string
           customer_email?: string | null
@@ -309,6 +311,7 @@ export type Database = {
           validity_terms?: string | null
         }
         Update: {
+          closed_at?: string | null
           contact_preference?: string | null
           created_at?: string
           customer_email?: string | null
