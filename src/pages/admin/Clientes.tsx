@@ -135,7 +135,13 @@ export default function Clientes() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">Clientes</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Clientes</h1>
+        <Button onClick={() => setNewDialogOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Cliente
+        </Button>
+      </div>
 
       <div className="mb-6">
         <div className="relative">
