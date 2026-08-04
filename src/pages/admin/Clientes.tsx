@@ -39,6 +39,7 @@ export default function Clientes() {
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [ordersDialogOpen, setOrdersDialogOpen] = useState(false);
+  const [newDialogOpen, setNewDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Profile | null>(null);
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
