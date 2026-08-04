@@ -272,6 +272,12 @@ export default function Clientes() {
           />
         </>
       )}
+
+      <NewClientDialog
+        open={newDialogOpen}
+        onOpenChange={setNewDialogOpen}
+        onSuccess={loadProfiles}
+      />
     </div>
   );
 }
