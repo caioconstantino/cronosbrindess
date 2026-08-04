@@ -10,6 +10,7 @@ import { UserCheck, Plus, Pencil, FileText, Search } from "lucide-react";
 import AssignSalespersonDialog from "./AssignSalespersonDialog";
 import EditClientDialog from "./EditClientDialog";
 import ClientOrdersDialog from "./ClientOrdersDialog";
+import NewClientDialog from "./NewClientDialog";
 
 type Profile = {
   id: string;
