@@ -177,7 +177,11 @@ export const Header = ({
                         </div>}
                       <span className="font-medium text-sm">{product.name}</span>
                     </button>)}
+                  <button type="submit" className="w-full px-4 py-3 text-sm font-semibold text-primary hover:bg-muted transition-colors border-t border-border">
+                    Ver mais resultados
+                  </button>
                 </div>}
+
             </form>
 
             <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">

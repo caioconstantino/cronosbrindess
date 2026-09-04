@@ -12,12 +12,21 @@ export default function Products() {
   const [categories, setCategories] = useState<any[]>([]);
   const [cart, setCart] = useState<any[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
   // Sync selected category from URL
   const categoryParam = searchParams.get("categoria");
   const selectedCategory = categoryParam || "all";
+  const searchTerm = searchParams.get("search") || "";
+
+  const setSearchTerm = (value: string) => {
+    if (value) {
+      searchParams.set("search", value);
+    } else {
+      searchParams.delete("search");
+    }
+    setSearchParams(searchParams, { replace: true });
+  };
 
   const handleCategoryChange = (value: string) => {
     if (value === "all") {
@@ -36,6 +45,7 @@ export default function Products() {
   useEffect(() => {
     loadProducts();
   }, [selectedCategory, searchTerm]);
+
 
   const loadCategories = async () => {
     const { data, error } = await supabase.from("categories").select("*").order("name");
