@@ -156,7 +156,7 @@ export default function Checkout() {
 
       if (itemsError) throw itemsError;
 
-      // Send email to admin
+      // Send email to comercial@ and configured admin email
       try {
         const { data: emailSettings } = await supabase
           .from("email_settings")
@@ -164,28 +164,52 @@ export default function Checkout() {
           .limit(1)
           .maybeSingle();
 
-        if (emailSettings?.admin_email) {
+        const recipients = [
+          ...new Set(
+            ["comercial@cronosbrindes.com.br", emailSettings?.admin_email].filter(
+              (e): e is string => !!e
+            )
+          ),
+        ];
+
+        if (recipients.length > 0) {
+          const formatBRL = (v: number) =>
+            v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
           const itemsList = cart
-            .map((item) => `<li>${item.name} - Qtd: ${item.quantity} - R$ ${((item.price || 0) * item.quantity).toFixed(2)}</li>`)
+            .map(
+              (item) =>
+                `<li>${item.name} — Qtd: ${item.quantity} — ${formatBRL((item.price || 0) * item.quantity)}</li>`
+            )
             .join("");
 
-          await supabase.functions.invoke("send-email", {
-            body: {
-              to: emailSettings.admin_email,
-              subject: `Novo Orçamento Recebido - #${orderData.order_number}`,
-              html: `
-                <h2>Novo Pedido de Orçamento</h2>
-                <p><strong>Número do Orçamento:</strong> ${orderData.order_number}</p>
-                <p><strong>Cliente:</strong> ${formData.empresa || formData.contato}</p>
-                <p><strong>Email:</strong> ${formData.email}</p>
-                <p><strong>Telefone:</strong> ${formData.telefone}</p>
-                <h3>Itens do Pedido:</h3>
-                <ul>${itemsList}</ul>
-                <p><strong>Total:</strong> R$ ${total.toFixed(2)}</p>
-                ${formData.notes ? `<p><strong>Observações:</strong> ${formData.notes}</p>` : ''}
-              `,
-            },
-          });
+          const html = `
+            <h2>Novo Pedido de Orçamento</h2>
+            <p><strong>Número do Orçamento:</strong> ${orderData.order_number}</p>
+            <p><strong>Data:</strong> ${new Date().toLocaleString("pt-BR")}</p>
+            <p><strong>Cliente:</strong> ${formData.empresa || formData.contato}</p>
+            <p><strong>Contato:</strong> ${formData.contato || "-"}</p>
+            <p><strong>Email:</strong> ${formData.email}</p>
+            <p><strong>Telefone:</strong> ${formData.telefone || "-"}</p>
+            <p><strong>CPF/CNPJ:</strong> ${formData.cpf_cnpj || "-"}</p>
+            <p><strong>Preferência de Contato:</strong> ${formData.preferencia_contato || "-"}</p>
+            ${formData.cidade ? `<p><strong>Cidade/UF:</strong> ${formData.cidade}${formData.estado ? "/" + formData.estado : ""}</p>` : ""}
+            <h3>Itens do Pedido:</h3>
+            <ul>${itemsList}</ul>
+            <p><strong>Total:</strong> ${formatBRL(total)}</p>
+            ${formData.notes ? `<p><strong>Observações do Cliente:</strong> ${formData.notes}</p>` : ""}
+          `;
+
+          await Promise.all(
+            recipients.map((to) =>
+              supabase.functions.invoke("send-email", {
+                body: {
+                  to,
+                  subject: `Novo Orçamento Recebido - #${orderData.order_number}`,
+                  html,
+                },
+              })
+            )
+          );
         }
       } catch (emailError) {
         console.error("Error sending admin email:", emailError);
