@@ -281,6 +281,7 @@ export type Database = {
           customer_email: string | null
           delivery_terms: string | null
           id: string
+          internal_notes: string | null
           notes: string | null
           order_number: string | null
           payment_terms: string | null
@@ -299,6 +300,7 @@ export type Database = {
           customer_email?: string | null
           delivery_terms?: string | null
           id?: string
+          internal_notes?: string | null
           notes?: string | null
           order_number?: string | null
           payment_terms?: string | null
@@ -317,6 +319,7 @@ export type Database = {
           customer_email?: string | null
           delivery_terms?: string | null
           id?: string
+          internal_notes?: string | null
           notes?: string | null
           order_number?: string | null
           payment_terms?: string | null
