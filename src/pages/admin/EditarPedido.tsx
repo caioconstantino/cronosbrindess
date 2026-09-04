@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ArrowLeft, Download, Mail, Trash2, Plus, Lock, Search, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Mail, Trash2, Plus, Lock, Search, Loader2, ClipboardList } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import jsPDF from "jspdf";
 import logoImage from "@/assets/logo-cronos.png";
@@ -41,6 +42,7 @@ type Order = {
   total: number | null;
   status: string | null;
   notes: string | null;
+  internal_notes: string | null;
   created_at: string;
   payment_terms: string | null;
   delivery_terms: string | null;
@@ -94,6 +96,8 @@ export default function EditarPedido() {
   const [customItemQuantity, setCustomItemQuantity] = useState<number>(1);
   const [customItemImage, setCustomItemImage] = useState("");
   const [auditRefreshTrigger, setAuditRefreshTrigger] = useState(0);
+  const [internalNotes, setInternalNotes] = useState("");
+  const [savingInternalNotes, setSavingInternalNotes] = useState(false);
   const [originalOrder, setOriginalOrder] = useState<any>(null);
   const [originalItems, setOriginalItems] = useState<OrderItem[]>([]);
   // Estados para edição de dados do cliente
@@ -229,6 +233,7 @@ export default function EditarPedido() {
     
     setOrder(orderWithRelations);
     setOriginalOrder({ ...orderData });
+    setInternalNotes(orderData.internal_notes || "");
 
     // Initialize customer data states for editing
     if (profileData) {
@@ -678,6 +683,39 @@ export default function EditarPedido() {
 
     toast.success("Pedido atualizado com sucesso!");
     navigate(isAdmin ? "/admin/pedidos" : "/vendedor/pedidos");
+  };
+
+  // Internal notes can be updated even on sold/sent orders (finance, logistics, production)
+  const saveInternalNotes = async () => {
+    if (!id || !order) return;
+
+    setSavingInternalNotes(true);
+    const { error } = await supabase
+      .from("orders")
+      .update({ internal_notes: internalNotes })
+      .eq("id", id);
+
+    if (error) {
+      toast.error("Erro ao salvar observações internas");
+      setSavingInternalNotes(false);
+      return;
+    }
+
+    if ((order.internal_notes || "") !== internalNotes) {
+      await logOrderChange(
+        id,
+        "updated",
+        { "Observações Internas": { old: order.internal_notes || "", new: internalNotes } },
+        user?.id,
+        user?.email,
+        order?.profiles?.contato || user?.email
+      );
+      setAuditRefreshTrigger((prev) => prev + 1);
+    }
+
+    setOrder({ ...order, internal_notes: internalNotes });
+    setSavingInternalNotes(false);
+    toast.success("Observações internas salvas!");
   };
 
   const generatePDF = async (download = true) => {
@@ -1553,6 +1591,32 @@ export default function EditarPedido() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ClipboardList className="h-5 w-5" />
+            Observações Internas (Financeiro / Logística / Produção)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Essas observações são apenas para uso interno da equipe e não aparecem no PDF enviado ao cliente.
+            Podem ser editadas mesmo após o envio do pedido.
+          </p>
+          <Textarea
+            value={internalNotes}
+            onChange={(e) => setInternalNotes(e.target.value)}
+            placeholder="Ex.: Liberar produção após pagamento da 1ª parcela; entregar no galpão 2; cliente pediu nota com CNPJ da matriz..."
+            rows={4}
+          />
+          <div className="flex justify-end">
+            <Button onClick={saveInternalNotes} disabled={savingInternalNotes} variant="secondary">
+              {savingInternalNotes ? "Salvando..." : "Salvar Observações"}
+            </Button>
           </div>
         </CardContent>
       </Card>
