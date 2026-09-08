@@ -25,9 +25,16 @@ interface Product {
   altura: number | null;
   largura: number | null;
   comprimento: number | null;
+  max_colors?: number | null;
   categories?: {
     name: string;
   };
+}
+
+interface ColorOption {
+  id: string;
+  name: string;
+  hex: string;
 }
 
 export default function ProductDetail() {
