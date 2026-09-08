@@ -118,6 +118,36 @@ export type Database = {
         }
         Relationships: []
       }
+      colors: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_order: number
+          hex: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          hex?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          hex?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_settings: {
         Row: {
           admin_email: string
@@ -369,6 +399,42 @@ export type Database = {
           },
         ]
       }
+      product_colors: {
+        Row: {
+          color_id: string
+          created_at: string
+          id: string
+          product_id: string
+        }
+        Insert: {
+          color_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+        }
+        Update: {
+          color_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_colors_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_colors_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_images: {
         Row: {
           created_at: string
@@ -444,6 +510,7 @@ export type Database = {
           id: string
           image_url: string | null
           largura: number | null
+          max_colors: number
           name: string
           ncm: string | null
           updated_at: string
@@ -458,6 +525,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           largura?: number | null
+          max_colors?: number
           name: string
           ncm?: string | null
           updated_at?: string
@@ -472,6 +540,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           largura?: number | null
+          max_colors?: number
           name?: string
           ncm?: string | null
           updated_at?: string
