@@ -769,6 +769,60 @@ export default function ProdutosNew() {
                     </div>
                   )}
                 </TabsContent>
+
+                <TabsContent value="colors" className="space-y-4">
+                  <div>
+                    <Label>Quantas cores o cliente pode escolher</Label>
+                    <select
+                      className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                      value={formData.max_colors}
+                      onChange={(e) =>
+                        setFormData({ ...formData, max_colors: Number(e.target.value) })
+                      }
+                    >
+                      <option value={0}>Não permitir escolha de cores</option>
+                      <option value={1}>1 cor</option>
+                      <option value={2}>até 2 cores</option>
+                      <option value={3}>até 3 cores</option>
+                      <option value={4}>até 4 cores</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label>Cores disponíveis para este produto</Label>
+                    <p className="text-xs text-muted-foreground mt-1 mb-2">
+                      Cadastre novas cores em Configurações do Site → Cores.
+                    </p>
+                    {colors.length === 0 ? (
+                      <div className="text-sm text-muted-foreground py-4">
+                        Nenhuma cor cadastrada ainda.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {colors.map((color) => {
+                          const selected = formData.color_ids.includes(color.id);
+                          return (
+                            <button
+                              type="button"
+                              key={color.id}
+                              onClick={() => toggleColor(color.id)}
+                              className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm text-left transition-colors ${
+                                selected ? "border-primary bg-accent/40" : "hover:bg-muted"
+                              }`}
+                            >
+                              <span
+                                className="h-5 w-5 rounded-full border flex-shrink-0"
+                                style={{ backgroundColor: color.hex }}
+                              />
+                              <span className="flex-1 truncate">{color.name}</span>
+                              {selected && <span className="text-xs">✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
               </Tabs>
 
               <div className="flex gap-2 mt-6">
