@@ -244,6 +244,33 @@ export default function ProdutosNew() {
     setCategories(data || []);
   };
 
+  const loadColors = async () => {
+    const { data } = await supabase
+      .from("colors")
+      .select("id, name, hex, active")
+      .eq("active", true)
+      .order("display_order")
+      .order("name");
+    setColors((data as Color[]) || []);
+  };
+
+  const loadProductColors = async (productId: string) => {
+    const { data } = await supabase
+      .from("product_colors")
+      .select("color_id")
+      .eq("product_id", productId);
+    return data?.map((pc) => pc.color_id) || [];
+  };
+
+  const toggleColor = (colorId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      color_ids: prev.color_ids.includes(colorId)
+        ? prev.color_ids.filter((id) => id !== colorId)
+        : [...prev.color_ids, colorId],
+    }));
+  };
+
   const loadProductImages = async (productId: string) => {
     const { data } = await supabase
       .from("product_images")
