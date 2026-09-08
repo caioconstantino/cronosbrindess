@@ -464,6 +464,17 @@ export default function ProdutosNew() {
       await supabase.from("product_categories").insert(categoriesToInsert);
     }
 
+    // Inserir cores liberadas para o produto
+    if (formData.color_ids.length > 0) {
+      await supabase.from("product_colors").insert(
+        formData.color_ids.map((colorId) => ({
+          product_id: productId,
+          color_id: colorId,
+        }))
+      );
+    }
+
+
     toast.success(editingProduct ? "Produto atualizado com sucesso!" : "Produto criado com sucesso!");
     resetForm();
     loadProducts();
@@ -493,6 +504,8 @@ export default function ProdutosNew() {
       altura: "",
       largura: "",
       comprimento: "",
+      max_colors: 0,
+      color_ids: [],
     });
     setAdditionalImages([]);
     // Adicionar variante padrão "Gravação" ao resetar o formulário
