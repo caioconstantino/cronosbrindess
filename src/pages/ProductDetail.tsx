@@ -46,11 +46,15 @@ export default function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [cart, setCart] = useState<any[]>([]);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [availableColors, setAvailableColors] = useState<ColorOption[]>([]);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
 
   useEffect(() => {
     loadProduct();
     loadImages();
+    loadColors();
     loadCart();
+    setSelectedColors([]);
     setSelectedImage(0); // Reset para a primeira imagem
     // Scroll para o topo quando o produto mudar
     window.scrollTo({ top: 0, behavior: 'smooth' });
