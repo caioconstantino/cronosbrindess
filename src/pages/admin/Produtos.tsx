@@ -541,10 +541,11 @@ export default function ProdutosNew() {
     // Garantir que a variante padrão existe antes de carregar
     await ensureDefaultVariant(product.id);
     
-    const [images, variants, categoryIds] = await Promise.all([
+    const [images, variants, categoryIds, colorIds] = await Promise.all([
       loadProductImages(product.id),
       loadProductVariants(product.id),
       loadProductCategories(product.id),
+      loadProductColors(product.id),
     ]);
 
     setFormData({
@@ -557,6 +558,8 @@ export default function ProdutosNew() {
       altura: product.altura?.toString() || "",
       largura: product.largura?.toString() || "",
       comprimento: product.comprimento?.toString() || "",
+      max_colors: product.max_colors ?? 0,
+      color_ids: colorIds,
     });
 
     setAdditionalImages(images);
