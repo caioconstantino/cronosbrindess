@@ -164,15 +164,31 @@ export default function ProductDetail() {
     const targetProduct = productToAdd || product;
     if (!targetProduct) return;
 
+    const isMainProduct = !productToAdd;
+    const maxColors = targetProduct.max_colors ?? 0;
+    let variants: Record<string, string> = {};
+
+    if (isMainProduct && maxColors > 0) {
+      if (selectedColors.length === 0) {
+        toast({
+          title: "Escolha as cores",
+          description: `Selecione de 1 até ${maxColors} cor(es) para a personalização.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      variants = { Cores: selectedColors.join(", ") };
+    }
+
     const cartItem = {
       ...targetProduct,
       quantity: 1,
-      selectedVariants: {},
+      selectedVariants: variants,
     };
 
     const existingItemIndex = cart.findIndex(
       item => item.id === targetProduct.id && 
-      JSON.stringify(item.selectedVariants) === JSON.stringify({})
+      JSON.stringify(item.selectedVariants) === JSON.stringify(variants)
     );
 
     let newCart;
