@@ -86,6 +86,41 @@ export default function ProductDetail() {
     if (data) setImages(data);
   };
 
+  const loadColors = async () => {
+    const { data } = await supabase
+      .from("product_colors")
+      .select("colors(id, name, hex, active, display_order)")
+      .eq("product_id", id);
+
+    const list = (data || [])
+      .map((row: any) => row.colors)
+      .filter((c: any) => c && c.active)
+      .sort((a: any, b: any) =>
+        a.display_order === b.display_order
+          ? a.name.localeCompare(b.name)
+          : a.display_order - b.display_order
+      )
+      .map((c: any) => ({ id: c.id, name: c.name, hex: c.hex }));
+
+    setAvailableColors(list);
+  };
+
+  const toggleColor = (colorName: string) => {
+    const max = product?.max_colors ?? 0;
+    setSelectedColors((prev) => {
+      if (prev.includes(colorName)) return prev.filter((c) => c !== colorName);
+      if (prev.length >= max) {
+        toast({
+          title: "Limite de cores",
+          description: `Este produto permite no máximo ${max} cor(es).`,
+          variant: "destructive",
+        });
+        return prev;
+      }
+      return [...prev, colorName];
+    });
+  };
+
   const loadRecommendedProducts = async () => {
     if (!product) return;
 
