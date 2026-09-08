@@ -610,10 +610,11 @@ export default function ProdutosNew() {
             </DialogHeader>
             <form onSubmit={handleSubmit}>
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="basic">Básico</TabsTrigger>
                   <TabsTrigger value="images">Imagens</TabsTrigger>
                   <TabsTrigger value="variants">Variações</TabsTrigger>
+                  <TabsTrigger value="colors">Cores</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="basic" className="space-y-4">
