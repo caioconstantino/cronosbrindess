@@ -27,6 +27,14 @@ type Product = {
   altura: number | null;
   largura: number | null;
   comprimento: number | null;
+  max_colors?: number | null;
+};
+
+type Color = {
+  id: string;
+  name: string;
+  hex: string;
+  active: boolean;
 };
 
 type Category = {
