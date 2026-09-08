@@ -15,6 +15,7 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import Produtos from "./pages/admin/Produtos";
 import Categorias from "./pages/admin/Categorias";
 import Banners from "./pages/admin/Banners";
+import Cores from "./pages/admin/Cores";
 import Pedidos from "./pages/admin/Pedidos";
 import EditarPedido from "./pages/admin/EditarPedido";
 import CriarPedido from "./pages/admin/CriarPedido";
