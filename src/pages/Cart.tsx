@@ -131,7 +131,7 @@ export default function Cart() {
                       {item.selectedVariants && Object.keys(item.selectedVariants).length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {Object.entries(item.selectedVariants).map(([variantId, value]) => {
-                            const variantName = variantsData[variantId]?.name || "Opção";
+                            const variantName = variantsData[variantId]?.name || variantId;
                             return (
                               <Badge key={variantId} variant="secondary" className="text-xs">
                                 {variantName}: {value as string}

@@ -156,6 +156,7 @@ export default function Products() {
               name={product.name}
               description={product.description}
               imageUrl={product.image_url}
+              maxColors={product.max_colors}
               onAddToCart={(variants) => addToCart(product, variants)}
             />
           ))}

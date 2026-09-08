@@ -15,6 +15,7 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import Produtos from "./pages/admin/Produtos";
 import Categorias from "./pages/admin/Categorias";
 import Banners from "./pages/admin/Banners";
+import Cores from "./pages/admin/Cores";
 import Pedidos from "./pages/admin/Pedidos";
 import EditarPedido from "./pages/admin/EditarPedido";
 import CriarPedido from "./pages/admin/CriarPedido";
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="clientes" element={<Clientes />} />
             <Route path="usuarios" element={<Usuarios />} />
             <Route path="configuracoes/banners" element={<Banners />} />
+            <Route path="configuracoes/cores" element={<Cores />} />
             <Route path="configuracoes/clientes" element={<SiteClients />} />
             <Route path="configuracoes/email" element={<EmailSettings />} />
             <Route path="configuracoes/email/templates" element={<EmailTemplates />} />

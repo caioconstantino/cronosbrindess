@@ -25,9 +25,16 @@ interface Product {
   altura: number | null;
   largura: number | null;
   comprimento: number | null;
+  max_colors?: number | null;
   categories?: {
     name: string;
   };
+}
+
+interface ColorOption {
+  id: string;
+  name: string;
+  hex: string;
 }
 
 export default function ProductDetail() {
@@ -39,11 +46,15 @@ export default function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [cart, setCart] = useState<any[]>([]);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [availableColors, setAvailableColors] = useState<ColorOption[]>([]);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
 
   useEffect(() => {
     loadProduct();
     loadImages();
+    loadColors();
     loadCart();
+    setSelectedColors([]);
     setSelectedImage(0); // Reset para a primeira imagem
     // Scroll para o topo quando o produto mudar
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -73,6 +84,41 @@ export default function ProductDetail() {
       .order("display_order");
     
     if (data) setImages(data);
+  };
+
+  const loadColors = async () => {
+    const { data } = await supabase
+      .from("product_colors")
+      .select("colors(id, name, hex, active, display_order)")
+      .eq("product_id", id);
+
+    const list = (data || [])
+      .map((row: any) => row.colors)
+      .filter((c: any) => c && c.active)
+      .sort((a: any, b: any) =>
+        a.display_order === b.display_order
+          ? a.name.localeCompare(b.name)
+          : a.display_order - b.display_order
+      )
+      .map((c: any) => ({ id: c.id, name: c.name, hex: c.hex }));
+
+    setAvailableColors(list);
+  };
+
+  const toggleColor = (colorName: string) => {
+    const max = product?.max_colors ?? 0;
+    setSelectedColors((prev) => {
+      if (prev.includes(colorName)) return prev.filter((c) => c !== colorName);
+      if (prev.length >= max) {
+        toast({
+          title: "Limite de cores",
+          description: `Este produto permite no máximo ${max} cor(es).`,
+          variant: "destructive",
+        });
+        return prev;
+      }
+      return [...prev, colorName];
+    });
   };
 
   const loadRecommendedProducts = async () => {
@@ -118,15 +164,31 @@ export default function ProductDetail() {
     const targetProduct = productToAdd || product;
     if (!targetProduct) return;
 
+    const isMainProduct = !productToAdd;
+    const maxColors = targetProduct.max_colors ?? 0;
+    let variants: Record<string, string> = {};
+
+    if (isMainProduct && maxColors > 0) {
+      if (selectedColors.length === 0) {
+        toast({
+          title: "Escolha as cores",
+          description: `Selecione de 1 até ${maxColors} cor(es) para a personalização.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      variants = { Cores: selectedColors.join(", ") };
+    }
+
     const cartItem = {
       ...targetProduct,
       quantity: 1,
-      selectedVariants: {},
+      selectedVariants: variants,
     };
 
     const existingItemIndex = cart.findIndex(
       item => item.id === targetProduct.id && 
-      JSON.stringify(item.selectedVariants) === JSON.stringify({})
+      JSON.stringify(item.selectedVariants) === JSON.stringify(variants)
     );
 
     let newCart;
@@ -250,6 +312,41 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {/* Cores da personalização */}
+            {(product.max_colors ?? 0) > 0 && availableColors.length > 0 && (
+              <div className="border border-border rounded-lg p-4 bg-muted/50">
+                <h3 className="text-sm font-semibold mb-1">
+                  Cores da personalização
+                </h3>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Escolha até {product.max_colors} cor(es) • {selectedColors.length} selecionada(s)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {availableColors.map((color) => {
+                    const selected = selectedColors.includes(color.name);
+                    return (
+                      <button
+                        key={color.id}
+                        type="button"
+                        onClick={() => toggleColor(color.name)}
+                        className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                          selected
+                            ? "border-accent bg-accent/20 font-medium"
+                            : "border-border hover:bg-muted"
+                        }`}
+                      >
+                        <span
+                          className="h-4 w-4 rounded-full border"
+                          style={{ backgroundColor: color.hex }}
+                        />
+                        {color.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <Button
               onClick={() => addToCart()}
               size="lg"
@@ -275,6 +372,7 @@ export default function ProductDetail() {
                   name={recProduct.name}
                   description={recProduct.description}
                   imageUrl={recProduct.image_url}
+                  maxColors={recProduct.max_colors}
                   onAddToCart={() => addToCart(recProduct)}
                 />
               ))}
