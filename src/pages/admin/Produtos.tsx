@@ -180,7 +180,10 @@ export default function ProdutosNew() {
     altura: "",
     largura: "",
     comprimento: "",
+    max_colors: 0,
+    color_ids: [] as string[],
   });
+  const [colors, setColors] = useState<Color[]>([]);
   const [additionalImages, setAdditionalImages] = useState<string[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [newVariant, setNewVariant] = useState({ name: "", options: "" });
