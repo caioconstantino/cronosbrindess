@@ -201,6 +201,7 @@ export default function ProdutosNew() {
     if (isAdmin) {
       loadProducts();
       loadCategories();
+      loadColors();
       // Adicionar variante padrão em todos os produtos existentes (apenas uma vez)
       if (!hasAddedDefaultVariants.current) {
         addDefaultVariantToAllProducts();
