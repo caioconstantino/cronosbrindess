@@ -312,6 +312,41 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {/* Cores da personalização */}
+            {(product.max_colors ?? 0) > 0 && availableColors.length > 0 && (
+              <div className="border border-border rounded-lg p-4 bg-muted/50">
+                <h3 className="text-sm font-semibold mb-1">
+                  Cores da personalização
+                </h3>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Escolha até {product.max_colors} cor(es) • {selectedColors.length} selecionada(s)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {availableColors.map((color) => {
+                    const selected = selectedColors.includes(color.name);
+                    return (
+                      <button
+                        key={color.id}
+                        type="button"
+                        onClick={() => toggleColor(color.name)}
+                        className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                          selected
+                            ? "border-accent bg-accent/20 font-medium"
+                            : "border-border hover:bg-muted"
+                        }`}
+                      >
+                        <span
+                          className="h-4 w-4 rounded-full border"
+                          style={{ backgroundColor: color.hex }}
+                        />
+                        {color.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <Button
               onClick={() => addToCart()}
               size="lg"
