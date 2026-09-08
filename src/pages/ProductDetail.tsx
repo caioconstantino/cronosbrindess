@@ -372,6 +372,7 @@ export default function ProductDetail() {
                   name={recProduct.name}
                   description={recProduct.description}
                   imageUrl={recProduct.image_url}
+                  maxColors={recProduct.max_colors}
                   onAddToCart={() => addToCart(recProduct)}
                 />
               ))}
