@@ -361,6 +361,7 @@ export default function ProdutosNew() {
       altura: formData.altura ? parseFloat(formData.altura) : null,
       largura: formData.largura ? parseFloat(formData.largura) : null,
       comprimento: formData.comprimento ? parseFloat(formData.comprimento) : null,
+      max_colors: Number(formData.max_colors) || 0,
     };
 
     let productId: string;
@@ -392,6 +393,12 @@ export default function ProdutosNew() {
       // Deletar categorias antigas
       await supabase
         .from("product_categories")
+        .delete()
+        .eq("product_id", productId);
+
+      // Deletar cores antigas
+      await supabase
+        .from("product_colors")
         .delete()
         .eq("product_id", productId);
     } else {
