@@ -86,6 +86,8 @@ export default function EditarPedido() {
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [variants, setVariants] = useState<Record<string, { id: string; name: string; options: string[] }[]>>({});
+  const [productColors, setProductColors] = useState<Record<string, { id: string; name: string; hex: string }[]>>({});
+  const [productMaxColors, setProductMaxColors] = useState<Record<string, number>>({});
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productSearch, setProductSearch] = useState("");
   const [showProductSuggestions, setShowProductSuggestions] = useState(false);
@@ -282,6 +284,7 @@ export default function EditarPedido() {
       const uniqueProductIds = Array.from(new Set((itemsData || []).map((i: any) => i.product_id).filter(Boolean)));
       for (const pid of uniqueProductIds) {
         await loadVariants(pid);
+        await loadProductColors(pid);
       }
     }
 
@@ -318,6 +321,66 @@ export default function EditarPedido() {
 
     const formatted = (data || []).map((v: any) => ({ id: v.id, name: v.name, options: Array.isArray(v.options) ? v.options as string[] : [] }));
     setVariants(prev => ({ ...prev, [productId]: formatted }));
+  };
+
+  const loadProductColors = async (productId: string) => {
+    if (!productId || productColors[productId]) return;
+
+    const { data: productData } = await supabase
+      .from("products")
+      .select("max_colors")
+      .eq("id", productId)
+      .maybeSingle();
+
+    const maxColors = productData?.max_colors ?? 0;
+    setProductMaxColors(prev => ({ ...prev, [productId]: maxColors }));
+
+    const { data: pcData } = await supabase
+      .from("product_colors")
+      .select("color_id")
+      .eq("product_id", productId);
+
+    const colorIds = (pcData || []).map((pc: any) => pc.color_id);
+    if (colorIds.length === 0) {
+      setProductColors(prev => ({ ...prev, [productId]: [] }));
+      return;
+    }
+
+    const { data: colorsData } = await supabase
+      .from("colors")
+      .select("id, name, hex, active, display_order")
+      .in("id", colorIds)
+      .eq("active", true)
+      .order("display_order");
+
+    setProductColors(prev => ({
+      ...prev,
+      [productId]: (colorsData || []).map((c: any) => ({ id: c.id, name: c.name, hex: c.hex })),
+    }));
+  };
+
+  const toggleItemColor = (itemId: string, colorName: string) => {
+    setItems(items.map(item => {
+      if (item.id !== itemId) return item;
+      const current = item.selected_variants?.Cores
+        ? item.selected_variants.Cores.split(", ").filter(Boolean)
+        : [];
+      const max = (item.product_id && productMaxColors[item.product_id]) || 0;
+      let updated: string[];
+      if (current.includes(colorName)) {
+        updated = current.filter(c => c !== colorName);
+      } else {
+        if (max > 0 && current.length >= max) return item;
+        updated = [...current, colorName];
+      }
+      const variantsCopy = { ...(item.selected_variants || {}) };
+      if (updated.length > 0) {
+        variantsCopy.Cores = updated.join(", ");
+      } else {
+        delete variantsCopy.Cores;
+      }
+      return { ...item, selected_variants: variantsCopy };
+    }));
   };
 
   const updateItemPrice = (itemId: string, newPrice: string) => {
@@ -452,7 +515,10 @@ export default function EditarPedido() {
       setProductSearch("");
       setNewItemQuantity(1);
       // Load variants for this product so admin can adjust after adding
-      if (data.product_id) await loadVariants(data.product_id);
+      if (data.product_id) {
+        await loadVariants(data.product_id);
+        await loadProductColors(data.product_id);
+      }
       toast.success("Item adicionado com sucesso");
     }
   };
