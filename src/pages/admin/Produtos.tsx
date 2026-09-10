@@ -965,7 +965,7 @@ export default function ProdutosNew() {
 
       {totalPages > 1 && (
         <div className="text-center text-sm text-muted-foreground mt-2">
-          Página {currentPage} de {totalPages} • {products.length} produto(s) no total
+          Página {currentPage} de {totalPages} • {filteredProducts.length} produto(s){searchTerm ? " encontrado(s)" : " no total"}
         </div>
       )}
     </div>
