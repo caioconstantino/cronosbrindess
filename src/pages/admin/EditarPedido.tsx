@@ -1745,6 +1745,41 @@ export default function EditarPedido() {
                         ))}
                       </div>
                     )}
+                    {/* Seleção de cores de personalização */}
+                    {item.product_id && productColors[item.product_id] && productColors[item.product_id].length > 0 && (productMaxColors[item.product_id] ?? 0) > 0 && (
+                      <div className="space-y-2 mt-2">
+                        <Label className="text-sm">
+                          Cores da Personalização (até {productMaxColors[item.product_id]})
+                        </Label>
+                        <div className="flex flex-wrap gap-2">
+                          {productColors[item.product_id].map((color) => {
+                            const selectedColors = item.selected_variants?.Cores
+                              ? item.selected_variants.Cores.split(", ").filter(Boolean)
+                              : [];
+                            const selected = selectedColors.includes(color.name);
+                            return (
+                              <button
+                                key={color.id}
+                                type="button"
+                                disabled={isReadOnly}
+                                onClick={() => toggleItemColor(item.id, color.name)}
+                                className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors disabled:opacity-60 ${
+                                  selected
+                                    ? "border-primary bg-primary/10 font-medium"
+                                    : "border-border hover:border-primary/50"
+                                }`}
+                              >
+                                <span
+                                  className="h-3 w-3 rounded-full border"
+                                  style={{ backgroundColor: color.hex }}
+                                />
+                                {color.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 <div className="flex items-center gap-4">
                   <div>
