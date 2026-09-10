@@ -13,7 +13,7 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { MultiImageUpload } from "@/components/MultiImageUpload";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Search } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Product = {
@@ -188,6 +188,7 @@ export default function ProdutosNew() {
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [newVariant, setNewVariant] = useState({ name: "", options: "" });
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const productsPerPage = 20;
   const hasAddedDefaultVariants = useRef(false);
   const { user, isAdmin, loading } = useAuth();
@@ -567,11 +568,22 @@ export default function ProdutosNew() {
     setDialogOpen(true);
   };
 
+  // Filtrar produtos pela busca
+  const filteredProducts = products.filter((product) => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      product.name.toLowerCase().includes(term) ||
+      (product.description || "").toLowerCase().includes(term) ||
+      (product.ncm || "").toLowerCase().includes(term)
+    );
+  });
+
   // Calcular produtos paginados
-  const totalPages = Math.ceil(products.length / productsPerPage);
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
   const startIndex = (currentPage - 1) * productsPerPage;
   const endIndex = startIndex + productsPerPage;
-  const paginatedProducts = products.slice(startIndex, endIndex);
+  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -838,6 +850,19 @@ export default function ProdutosNew() {
         </Dialog>
       </div>
 
+      <div className="relative mb-6 max-w-md">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar produto por nome, descrição ou NCM..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="pl-10"
+        />
+      </div>
+
       <div className="grid gap-4">
         {paginatedProducts.map((product) => (
           <Card key={product.id} className="hover:shadow-elegant transition-shadow">
@@ -940,7 +965,7 @@ export default function ProdutosNew() {
 
       {totalPages > 1 && (
         <div className="text-center text-sm text-muted-foreground mt-2">
-          Página {currentPage} de {totalPages} • {products.length} produto(s) no total
+          Página {currentPage} de {totalPages} • {filteredProducts.length} produto(s){searchTerm ? " encontrado(s)" : " no total"}
         </div>
       )}
     </div>
