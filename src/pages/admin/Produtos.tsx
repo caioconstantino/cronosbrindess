@@ -850,6 +850,19 @@ export default function ProdutosNew() {
         </Dialog>
       </div>
 
+      <div className="relative mb-6 max-w-md">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar produto por nome, descrição ou NCM..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="pl-10"
+        />
+      </div>
+
       <div className="grid gap-4">
         {paginatedProducts.map((product) => (
           <Card key={product.id} className="hover:shadow-elegant transition-shadow">
