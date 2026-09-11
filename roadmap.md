@@ -1,0 +1,4 @@
+- [ ] Remover a escolha de cores do cliente.
+- [ ] Remover a configuração de cores do cadastro de produtos.
+- [ ] Permitir selecionar somente a quantidade de 1 a 4 cores no editor de pedido.
+- [ ] Validar o fluxo e a compilação.
