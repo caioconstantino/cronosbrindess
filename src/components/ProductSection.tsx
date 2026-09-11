@@ -62,7 +62,6 @@ export const ProductSection = ({
                   name={product.name}
                   description={product.description}
                   imageUrl={product.image_url}
-                  maxColors={product.max_colors}
                   onAddToCart={(variants) => onAddToCart(product, variants)}
                 />
               </CarouselItem>
