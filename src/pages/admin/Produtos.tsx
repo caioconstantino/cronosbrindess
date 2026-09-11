@@ -27,14 +27,6 @@ type Product = {
   altura: number | null;
   largura: number | null;
   comprimento: number | null;
-  max_colors?: number | null;
-};
-
-type Color = {
-  id: string;
-  name: string;
-  hex: string;
-  active: boolean;
 };
 
 type Category = {
@@ -180,10 +172,7 @@ export default function ProdutosNew() {
     altura: "",
     largura: "",
     comprimento: "",
-    max_colors: 0,
-    color_ids: [] as string[],
   });
-  const [colors, setColors] = useState<Color[]>([]);
   const [additionalImages, setAdditionalImages] = useState<string[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [newVariant, setNewVariant] = useState({ name: "", options: "" });
@@ -202,7 +191,6 @@ export default function ProdutosNew() {
     if (isAdmin) {
       loadProducts();
       loadCategories();
-      loadColors();
       // Adicionar variante padrão em todos os produtos existentes (apenas uma vez)
       if (!hasAddedDefaultVariants.current) {
         addDefaultVariantToAllProducts();
@@ -243,33 +231,6 @@ export default function ProdutosNew() {
   const loadCategories = async () => {
     const { data } = await supabase.from("categories").select("id, name");
     setCategories(data || []);
-  };
-
-  const loadColors = async () => {
-    const { data } = await supabase
-      .from("colors")
-      .select("id, name, hex, active")
-      .eq("active", true)
-      .order("display_order")
-      .order("name");
-    setColors((data as Color[]) || []);
-  };
-
-  const loadProductColors = async (productId: string) => {
-    const { data } = await supabase
-      .from("product_colors")
-      .select("color_id")
-      .eq("product_id", productId);
-    return data?.map((pc) => pc.color_id) || [];
-  };
-
-  const toggleColor = (colorId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      color_ids: prev.color_ids.includes(colorId)
-        ? prev.color_ids.filter((id) => id !== colorId)
-        : [...prev.color_ids, colorId],
-    }));
   };
 
   const loadProductImages = async (productId: string) => {
@@ -362,7 +323,6 @@ export default function ProdutosNew() {
       altura: formData.altura ? parseFloat(formData.altura) : null,
       largura: formData.largura ? parseFloat(formData.largura) : null,
       comprimento: formData.comprimento ? parseFloat(formData.comprimento) : null,
-      max_colors: Number(formData.max_colors) || 0,
     };
 
     let productId: string;
@@ -397,11 +357,6 @@ export default function ProdutosNew() {
         .delete()
         .eq("product_id", productId);
 
-      // Deletar cores antigas
-      await supabase
-        .from("product_colors")
-        .delete()
-        .eq("product_id", productId);
     } else {
       const { data, error } = await supabase
         .from("products")
@@ -465,17 +420,6 @@ export default function ProdutosNew() {
       await supabase.from("product_categories").insert(categoriesToInsert);
     }
 
-    // Inserir cores liberadas para o produto
-    if (formData.color_ids.length > 0) {
-      await supabase.from("product_colors").insert(
-        formData.color_ids.map((colorId) => ({
-          product_id: productId,
-          color_id: colorId,
-        }))
-      );
-    }
-
-
     toast.success(editingProduct ? "Produto atualizado com sucesso!" : "Produto criado com sucesso!");
     resetForm();
     loadProducts();
@@ -505,8 +449,6 @@ export default function ProdutosNew() {
       altura: "",
       largura: "",
       comprimento: "",
-      max_colors: 0,
-      color_ids: [],
     });
     setAdditionalImages([]);
     // Adicionar variante padrão "Gravação" ao resetar o formulário
@@ -542,11 +484,10 @@ export default function ProdutosNew() {
     // Garantir que a variante padrão existe antes de carregar
     await ensureDefaultVariant(product.id);
     
-    const [images, variants, categoryIds, colorIds] = await Promise.all([
+    const [images, variants, categoryIds] = await Promise.all([
       loadProductImages(product.id),
       loadProductVariants(product.id),
       loadProductCategories(product.id),
-      loadProductColors(product.id),
     ]);
 
     setFormData({
@@ -559,8 +500,6 @@ export default function ProdutosNew() {
       altura: product.altura?.toString() || "",
       largura: product.largura?.toString() || "",
       comprimento: product.comprimento?.toString() || "",
-      max_colors: product.max_colors ?? 0,
-      color_ids: colorIds,
     });
 
     setAdditionalImages(images);
@@ -622,11 +561,10 @@ export default function ProdutosNew() {
             </DialogHeader>
             <form onSubmit={handleSubmit}>
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="basic">Básico</TabsTrigger>
                   <TabsTrigger value="images">Imagens</TabsTrigger>
                   <TabsTrigger value="variants">Variações</TabsTrigger>
-                  <TabsTrigger value="colors">Cores</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="basic" className="space-y-4">
@@ -782,59 +720,6 @@ export default function ProdutosNew() {
                   )}
                 </TabsContent>
 
-                <TabsContent value="colors" className="space-y-4">
-                  <div>
-                    <Label>Quantas cores o cliente pode escolher</Label>
-                    <select
-                      className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                      value={formData.max_colors}
-                      onChange={(e) =>
-                        setFormData({ ...formData, max_colors: Number(e.target.value) })
-                      }
-                    >
-                      <option value={0}>Não permitir escolha de cores</option>
-                      <option value={1}>1 cor</option>
-                      <option value={2}>até 2 cores</option>
-                      <option value={3}>até 3 cores</option>
-                      <option value={4}>até 4 cores</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <Label>Cores disponíveis para este produto</Label>
-                    <p className="text-xs text-muted-foreground mt-1 mb-2">
-                      Cadastre novas cores em Configurações do Site → Cores.
-                    </p>
-                    {colors.length === 0 ? (
-                      <div className="text-sm text-muted-foreground py-4">
-                        Nenhuma cor cadastrada ainda.
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2">
-                        {colors.map((color) => {
-                          const selected = formData.color_ids.includes(color.id);
-                          return (
-                            <button
-                              type="button"
-                              key={color.id}
-                              onClick={() => toggleColor(color.id)}
-                              className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm text-left transition-colors ${
-                                selected ? "border-primary bg-accent/40" : "hover:bg-muted"
-                              }`}
-                            >
-                              <span
-                                className="h-5 w-5 rounded-full border flex-shrink-0"
-                                style={{ backgroundColor: color.hex }}
-                              />
-                              <span className="flex-1 truncate">{color.name}</span>
-                              {selected && <span className="text-xs">✓</span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
               </Tabs>
 
               <div className="flex gap-2 mt-6">

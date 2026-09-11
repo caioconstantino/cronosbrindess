@@ -8,7 +8,6 @@ interface ProductCardProps {
   name: string;
   description?: string;
   imageUrl?: string;
-  maxColors?: number | null;
   onAddToCart: (selectedVariants?: Record<string, string>) => void;
 }
 
@@ -17,18 +16,11 @@ export const ProductCard = ({
   name,
   description,
   imageUrl,
-  maxColors,
   onAddToCart,
 }: ProductCardProps) => {
   const navigate = useNavigate();
-  const requiresColors = (maxColors ?? 0) > 0;
 
   const handleAddToCart = () => {
-    if (requiresColors) {
-      // Produto com personalização em cores: escolher na página do produto
-      navigate(`/produtos/${id}`);
-      return;
-    }
     // Add to cart without variant selection - admin will select variants on order edit
     onAddToCart({});
   };
@@ -81,7 +73,7 @@ export const ProductCard = ({
           className="w-full bg-gradient-accent hover:shadow-glow text-xs md:text-sm font-semibold"
         >
           <ShoppingCart className="mr-2 h-4 w-4" />
-          {requiresColors ? "Escolher Cores" : "Adicionar ao Orçamento"}
+          Adicionar ao Orçamento
         </Button>
       </CardFooter>
     </Card>

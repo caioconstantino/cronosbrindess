@@ -86,8 +86,6 @@ export default function EditarPedido() {
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [variants, setVariants] = useState<Record<string, { id: string; name: string; options: string[] }[]>>({});
-  const [productColors, setProductColors] = useState<Record<string, { id: string; name: string; hex: string }[]>>({});
-  const [productMaxColors, setProductMaxColors] = useState<Record<string, number>>({});
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productSearch, setProductSearch] = useState("");
   const [showProductSuggestions, setShowProductSuggestions] = useState(false);
@@ -284,7 +282,6 @@ export default function EditarPedido() {
       const uniqueProductIds = Array.from(new Set((itemsData || []).map((i: any) => i.product_id).filter(Boolean)));
       for (const pid of uniqueProductIds) {
         await loadVariants(pid);
-        await loadProductColors(pid);
       }
     }
 
@@ -323,62 +320,12 @@ export default function EditarPedido() {
     setVariants(prev => ({ ...prev, [productId]: formatted }));
   };
 
-  const loadProductColors = async (productId: string) => {
-    if (!productId || productColors[productId]) return;
-
-    const { data: productData } = await supabase
-      .from("products")
-      .select("max_colors")
-      .eq("id", productId)
-      .maybeSingle();
-
-    const maxColors = productData?.max_colors ?? 0;
-    setProductMaxColors(prev => ({ ...prev, [productId]: maxColors }));
-
-    const { data: pcData } = await supabase
-      .from("product_colors")
-      .select("color_id")
-      .eq("product_id", productId);
-
-    const colorIds = (pcData || []).map((pc: any) => pc.color_id);
-    if (colorIds.length === 0) {
-      setProductColors(prev => ({ ...prev, [productId]: [] }));
-      return;
-    }
-
-    const { data: colorsData } = await supabase
-      .from("colors")
-      .select("id, name, hex, active, display_order")
-      .in("id", colorIds)
-      .eq("active", true)
-      .order("display_order");
-
-    setProductColors(prev => ({
-      ...prev,
-      [productId]: (colorsData || []).map((c: any) => ({ id: c.id, name: c.name, hex: c.hex })),
-    }));
-  };
-
-  const toggleItemColor = (itemId: string, colorName: string) => {
+  const updateColorQuantity = (itemId: string, value: string) => {
     setItems(items.map(item => {
       if (item.id !== itemId) return item;
-      const current = item.selected_variants?.Cores
-        ? item.selected_variants.Cores.split(", ").filter(Boolean)
-        : [];
-      const max = (item.product_id && productMaxColors[item.product_id]) || 0;
-      let updated: string[];
-      if (current.includes(colorName)) {
-        updated = current.filter(c => c !== colorName);
-      } else {
-        if (max > 0 && current.length >= max) return item;
-        updated = [...current, colorName];
-      }
       const variantsCopy = { ...(item.selected_variants || {}) };
-      if (updated.length > 0) {
-        variantsCopy.Cores = updated.join(", ");
-      } else {
-        delete variantsCopy.Cores;
-      }
+      delete variantsCopy.Cores;
+      variantsCopy["Quantidade de cores"] = value;
       return { ...item, selected_variants: variantsCopy };
     }));
   };
@@ -517,7 +464,6 @@ export default function EditarPedido() {
       // Load variants for this product so admin can adjust after adding
       if (data.product_id) {
         await loadVariants(data.product_id);
-        await loadProductColors(data.product_id);
       }
       toast.success("Item adicionado com sucesso");
     }
@@ -1745,39 +1691,25 @@ export default function EditarPedido() {
                         ))}
                       </div>
                     )}
-                    {/* Seleção de cores de personalização */}
-                    {item.product_id && productColors[item.product_id] && productColors[item.product_id].length > 0 && (productMaxColors[item.product_id] ?? 0) > 0 && (
+                    {item.product_id && (
                       <div className="space-y-2 mt-2">
-                        <Label className="text-sm">
-                          Cores da Personalização (até {productMaxColors[item.product_id]})
-                        </Label>
-                        <div className="flex flex-wrap gap-2">
-                          {productColors[item.product_id].map((color) => {
-                            const selectedColors = item.selected_variants?.Cores
-                              ? item.selected_variants.Cores.split(", ").filter(Boolean)
-                              : [];
-                            const selected = selectedColors.includes(color.name);
-                            return (
-                              <button
-                                key={color.id}
-                                type="button"
-                                disabled={isReadOnly}
-                                onClick={() => toggleItemColor(item.id, color.name)}
-                                className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors disabled:opacity-60 ${
-                                  selected
-                                    ? "border-primary bg-primary/10 font-medium"
-                                    : "border-border hover:border-primary/50"
-                                }`}
-                              >
-                                <span
-                                  className="h-3 w-3 rounded-full border"
-                                  style={{ backgroundColor: color.hex }}
-                                />
-                                {color.name}
-                              </button>
-                            );
-                          })}
-                        </div>
+                        <Label className="text-sm">Quantidade de cores</Label>
+                        <Select
+                          value={item.selected_variants?.["Quantidade de cores"] || ""}
+                          onValueChange={(value) => updateColorQuantity(item.id, value)}
+                          disabled={isReadOnly}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a quantidade de cores" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[1, 2, 3, 4].map((quantity) => (
+                              <SelectItem key={quantity} value={String(quantity)}>
+                                {quantity} {quantity === 1 ? "cor" : "cores"}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     )}
                   </div>
